@@ -6,9 +6,18 @@ function buildUrl(endpoint: string, extra?: Record<string, string>): string {
   return `/api/hubstaff?${params.toString()}`
 }
 
-function apiFetch(endpoint: string, token: string, extra?: Record<string, string>): Promise<Response> {
-  return fetch(buildUrl(endpoint, extra), {
-    headers: { 'x-hubstaff-token': token },
+async function fetchHubstaff(
+  endpoint: string,
+  token: string,
+  extra?: Record<string, string>,
+): Promise<Response> {
+  const url = buildUrl(endpoint, extra)
+  return fetch(url, {
+    method: 'GET',
+    headers: {
+      'x-hubstaff-token': token,
+      'Accept': 'application/json',
+    },
   })
 }
 
@@ -25,7 +34,7 @@ export interface HubstaffOrganization {
 export async function testHubstaffToken(
   token: string,
 ): Promise<HubstaffOrganization[]> {
-  const res = await apiFetch('organizations', token)
+  const res = await fetchHubstaff('organizations', token)
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: 'Unknown error' })) as { error?: string }
     throw new Error(err.error ?? `Hubstaff error ${res.status}`)
@@ -38,7 +47,7 @@ export async function fetchHubstaffMembers(
   orgId: string,
   token: string,
 ): Promise<HubstaffMember[]> {
-  const res = await apiFetch(`organizations/${orgId}/members`, token)
+  const res = await fetchHubstaff(`organizations/${orgId}/members`, token)
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: 'Unknown error' })) as { error?: string }
     throw new Error(err.error ?? `Hubstaff error ${res.status}`)
@@ -59,7 +68,7 @@ export async function fetchHoursForPeriod(
   otThreshold: number,
   frequency: 'biweekly' | 'weekly',
 ): Promise<EmployeeHoursMap> {
-  const res = await apiFetch(`organizations/${orgId}/activities/daily`, token, {
+  const res = await fetchHubstaff(`organizations/${orgId}/activities/daily`, token, {
     date_from: startDate,
     date_to: endDate,
     'page[size]': '1000',
