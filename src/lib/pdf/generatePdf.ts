@@ -1,7 +1,16 @@
-import { pdf } from '@react-pdf/renderer'
 import type { ReactElement } from 'react'
 
+/**
+ * Lazily imports @react-pdf/renderer so the 434KB chunk is only loaded
+ * when the user actually requests a PDF, not on initial page load.
+ */
+async function getPdfRenderer() {
+  const { pdf } = await import('@react-pdf/renderer')
+  return { pdf }
+}
+
 export async function generatePdfBlob(element: ReactElement): Promise<Blob> {
+  const { pdf } = await getPdfRenderer()
   return await pdf(element).toBlob()
 }
 

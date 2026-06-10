@@ -11,8 +11,24 @@ import { useSettingsStore } from '@/store/settingsStore'
 import { toast } from '@/hooks/useToast'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { generatePdfBlob, downloadBlob, blobToBase64 } from '@/lib/pdf/generatePdf'
-import { PayStubDocument } from '@/lib/pdf/payStubPdf'
-import type { PayrollPeriod, SendResult } from '@/types'
+import type { PayrollPeriod, SendResult, CompanySettings, EmailTemplate } from '@/types'
+import type { PayrollEntry } from '@/types'
+
+async function loadPayStub() {
+  const { PayStubDocument } = await import('@/lib/pdf/payStubPdf')
+  return PayStubDocument
+}
+
+async function buildStubElement(
+  entry: PayrollEntry,
+  company: CompanySettings,
+  startDate: string,
+  endDate: string,
+  lang: EmailTemplate['payStubLanguage'],
+) {
+  const PayStubDocument = await loadPayStub()
+  return React.createElement(PayStubDocument, { entry, company, startDate, endDate, lang })
+}
 
 function statusVariant(status: PayrollPeriod['status']): 'default' | 'secondary' | 'info' | 'warning' {
   if (status === 'approved') return 'default'
@@ -41,13 +57,13 @@ function PayrollRow({ payroll }: { payroll: PayrollPeriod }) {
     const entry = payroll.entries[entryIdx]
     if (!entry) return
     try {
-      const element = React.createElement(PayStubDocument, {
+      const element = await buildStubElement(
         entry,
         company,
-        startDate: payroll.startDate,
-        endDate: payroll.endDate,
-        lang: emailTemplate.payStubLanguage,
-      })
+        payroll.startDate,
+        payroll.endDate,
+        emailTemplate.payStubLanguage,
+      )
       const blob = await generatePdfBlob(element)
       downloadBlob(blob, `paystub-${entry.employee.lastName}-${payroll.startDate}.pdf`)
     } catch {
@@ -67,13 +83,13 @@ function PayrollRow({ payroll }: { payroll: PayrollPeriod }) {
       return
     }
     try {
-      const element = React.createElement(PayStubDocument, {
+      const element = await buildStubElement(
         entry,
         company,
-        startDate: payroll.startDate,
-        endDate: payroll.endDate,
-        lang: emailTemplate.payStubLanguage,
-      })
+        payroll.startDate,
+        payroll.endDate,
+        emailTemplate.payStubLanguage,
+      )
       const blob = await generatePdfBlob(element)
       const pdfBase64 = await blobToBase64(blob)
       const subject = emailTemplate.subject
@@ -121,13 +137,13 @@ function PayrollRow({ payroll }: { payroll: PayrollPeriod }) {
       const entry = entries[i]
       try {
         if (!entry.employee.workEmail) throw new Error(t('errors.noEmail'))
-        const element = React.createElement(PayStubDocument, {
+        const element = await buildStubElement(
           entry,
           company,
-          startDate: payroll.startDate,
-          endDate: payroll.endDate,
-          lang: emailTemplate.payStubLanguage,
-        })
+          payroll.startDate,
+          payroll.endDate,
+          emailTemplate.payStubLanguage,
+        )
         const blob = await generatePdfBlob(element)
         const pdfBase64 = await blobToBase64(blob)
         const subject = emailTemplate.subject
@@ -175,13 +191,13 @@ function PayrollRow({ payroll }: { payroll: PayrollPeriod }) {
     setDownloadingAll(true)
     for (const entry of payroll.entries) {
       try {
-        const element = React.createElement(PayStubDocument, {
+        const element = await buildStubElement(
           entry,
           company,
-          startDate: payroll.startDate,
-          endDate: payroll.endDate,
-          lang: emailTemplate.payStubLanguage,
-        })
+          payroll.startDate,
+          payroll.endDate,
+          emailTemplate.payStubLanguage,
+        )
         const blob = await generatePdfBlob(element)
         downloadBlob(blob, `paystub-${entry.employee.lastName}-${payroll.startDate}.pdf`)
         await new Promise((r) => setTimeout(r, 300))

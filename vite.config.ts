@@ -13,7 +13,6 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          'react-pdf': ['@react-pdf/renderer'],
           'recharts': ['recharts'],
           'radix': [
             '@radix-ui/react-dialog',
