@@ -228,14 +228,17 @@ function HubstaffConnector() {
   }, [hubstaff.connected, hubstaff.accessToken, hubstaff.organizationId])
 
   const handleTest = async () => {
-    if (!hubstaff.accessToken) {
+    // Read fresh from store at call-time — avoids stale closure if the user
+    // typed the token and clicked the button before React re-rendered.
+    const token = useSettingsStore.getState().hubstaff.accessToken
+    if (!token) {
       toast({ variant: 'destructive', title: t('errors.apiKeyMissing') })
       return
     }
     setTesting(true)
     try {
       // Test only the token — hit GET /v2/organizations (no org ID needed)
-      const orgs = await testHubstaffToken(hubstaff.accessToken)
+      const orgs = await testHubstaffToken(token)
       setAvailableOrgs(orgs)
       updateHubstaff({ connected: true })
       const orgHint = orgs.length > 0
