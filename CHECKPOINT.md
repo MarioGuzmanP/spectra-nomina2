@@ -42,9 +42,7 @@ All phases (1–9) implemented and verified.
 
 ## Known Technical Debt (low priority)
 
-- react-pdf chunk is 434KB gzip — can lazy-load PDF generation
-- OT week boundary uses period start, not calendar Monday
-- No pagination on employees table (visual only issue at 50+ employees)
+- OT week boundary uses period start, not calendar Monday (edge case only)
 - Pay stub sends are sequential (not parallel) — by design for rate limits
 
 ---
