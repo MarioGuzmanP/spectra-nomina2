@@ -5,13 +5,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { endpoint, token, ...extraParams } = req.query
+  const { endpoint, ...extraParams } = req.query
+  const token = req.headers['x-hubstaff-token']
 
   if (!endpoint || typeof endpoint !== 'string') {
     return res.status(400).json({ error: 'endpoint parameter is required' })
   }
   if (!token || typeof token !== 'string') {
-    return res.status(400).json({ error: 'token parameter is required' })
+    return res.status(400).json({ error: 'x-hubstaff-token header is required' })
   }
 
   const qs = new URLSearchParams()

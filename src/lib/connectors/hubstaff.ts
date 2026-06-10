@@ -1,13 +1,15 @@
 import type { HubstaffMembersResponse, HubstaffMember, WeeklyHours } from './types'
 import { roundHalfUp } from '@/lib/payroll/calculations'
 
-function buildUrl(endpoint: string, token: string, extra?: Record<string, string>): string {
-  const params = new URLSearchParams({
-    endpoint,
-    token,
-    ...(extra ?? {}),
-  })
+function buildUrl(endpoint: string, extra?: Record<string, string>): string {
+  const params = new URLSearchParams({ endpoint, ...(extra ?? {}) })
   return `/api/hubstaff?${params.toString()}`
+}
+
+function apiFetch(endpoint: string, token: string, extra?: Record<string, string>): Promise<Response> {
+  return fetch(buildUrl(endpoint, extra), {
+    headers: { 'x-hubstaff-token': token },
+  })
 }
 
 export interface HubstaffOrganization {
@@ -23,7 +25,7 @@ export interface HubstaffOrganization {
 export async function testHubstaffToken(
   token: string,
 ): Promise<HubstaffOrganization[]> {
-  const res = await fetch(buildUrl('organizations', token))
+  const res = await apiFetch('organizations', token)
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: 'Unknown error' })) as { error?: string }
     throw new Error(err.error ?? `Hubstaff error ${res.status}`)
@@ -36,7 +38,7 @@ export async function fetchHubstaffMembers(
   orgId: string,
   token: string,
 ): Promise<HubstaffMember[]> {
-  const res = await fetch(buildUrl(`organizations/${orgId}/members`, token))
+  const res = await apiFetch(`organizations/${orgId}/members`, token)
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: 'Unknown error' })) as { error?: string }
     throw new Error(err.error ?? `Hubstaff error ${res.status}`)
@@ -57,13 +59,11 @@ export async function fetchHoursForPeriod(
   otThreshold: number,
   frequency: 'biweekly' | 'weekly',
 ): Promise<EmployeeHoursMap> {
-  const res = await fetch(
-    buildUrl(`organizations/${orgId}/activities/daily`, token, {
-      date_from: startDate,
-      date_to: endDate,
-      'page[size]': '1000',
-    }),
-  )
+  const res = await apiFetch(`organizations/${orgId}/activities/daily`, token, {
+    date_from: startDate,
+    date_to: endDate,
+    'page[size]': '1000',
+  })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: 'Unknown error' })) as { error?: string }
     throw new Error(err.error ?? `Hubstaff error ${res.status}`)
