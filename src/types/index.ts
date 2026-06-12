@@ -4,6 +4,7 @@ export interface Employee {
   lastName: string
   workEmail: string
   payRate: number
+  payRateCurrency?: string   // '' = not set in BambooHR; undefined = legacy pre-currency-sync
   payType: 'Hourly' | 'Salary'
   jobTitle: string
   department: string

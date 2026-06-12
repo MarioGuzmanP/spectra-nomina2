@@ -1,11 +1,11 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'GET') {
+  if (req.method !== 'GET' && req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { path, subdomain, apiKey } = req.query
+  const { path, subdomain, apiKey, ...extraQuery } = req.query
 
   if (!path || typeof path !== 'string') {
     return res.status(400).json({ error: 'path parameter is required' })
@@ -18,15 +18,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const credentials = Buffer.from(`${apiKey}:x`).toString('base64')
-  const url = `https://api.bamboohr.com/api/gateway.php/${subdomain}${path}`
+
+  // Forward extra query params (e.g., format=JSON for custom reports)
+  const qs = new URLSearchParams()
+  for (const [key, val] of Object.entries(extraQuery)) {
+    if (typeof val === 'string') qs.append(key, val)
+  }
+  const queryString = qs.toString()
+  const url = `https://api.bamboohr.com/api/gateway.php/${subdomain}${path}${queryString ? `?${queryString}` : ''}`
 
   try {
-    const response = await fetch(url, {
-      headers: {
-        Authorization: `Basic ${credentials}`,
-        Accept: 'application/json',
-      },
-    })
+    const headers: Record<string, string> = {
+      Authorization: `Basic ${credentials}`,
+      Accept: 'application/json',
+    }
+
+    const fetchOptions: RequestInit = {
+      method: req.method ?? 'GET',
+      headers,
+    }
+
+    if (req.method === 'POST' && req.body) {
+      headers['Content-Type'] = 'application/json'
+      fetchOptions.body = JSON.stringify(req.body)
+    }
+
+    const response = await fetch(url, fetchOptions)
 
     if (response.status === 401) {
       return res.status(401).json({ error: 'Unauthorized — check your BambooHR API key' })
@@ -40,7 +57,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const data: unknown = await response.json()
-
     res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate')
     return res.status(200).json(data)
   } catch (err) {

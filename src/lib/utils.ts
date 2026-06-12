@@ -39,3 +39,30 @@ export function debounce<T extends (...args: unknown[]) => void>(fn: T, ms: numb
 export function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
 }
+
+/**
+ * Format a pay rate with its currency from BambooHR.
+ * currency = ''  → "Not set" (not configured in BambooHR)
+ * currency = undefined → legacy data, fallback to RD$
+ * currency = 'DOP' → RD$ X.XX
+ * currency = 'USD' → $ X.XX
+ * other currencies → CURR X.XX
+ */
+export function formatPayRate(rate: number, currency: string | undefined): string {
+  if (currency === '') return 'Not set'
+  const fmt = (n: number) =>
+    n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  if (!currency || currency === 'DOP') return `RD$ ${fmt(rate)}`
+  if (currency === 'USD') return `$ ${fmt(rate)}`
+  return `${currency} ${fmt(rate)}`
+}
+
+/**
+ * Remove accents/diacritics and lowercase — for accent-insensitive search.
+ */
+export function normalize(str: string): string {
+  return str
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+}

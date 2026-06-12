@@ -1,25 +1,36 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { RefreshCw, Search, User } from 'lucide-react'
+import { RefreshCw, Search, User, ArrowUpDown, ArrowUp, ArrowDown, X, FileText } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Pagination } from '@/components/ui/pagination'
 import { useEmployeesStore } from '@/store/employeesStore'
 import { useSettingsStore } from '@/store/settingsStore'
 import { fetchBambooDirectory } from '@/lib/connectors/bamboohr'
 import { toast } from '@/hooks/useToast'
-import { formatCurrency, formatDate, getInitials } from '@/lib/utils'
+import { formatPayRate, formatDate, getInitials, normalize } from '@/lib/utils'
+import { EmployeeReports } from './EmployeeReports'
 import type { Employee } from '@/types'
 
 const PAGE_SIZE = 25
+type SortCol = 'name' | 'payRate' | 'hireDate'
+type SortDir = 'asc' | 'desc'
 
 function statusVariant(status: Employee['status']): 'default' | 'secondary' | 'destructive' {
   if (status === 'Active') return 'default'
   if (status === 'Inactive') return 'secondary'
   return 'destructive'
+}
+
+function SortIcon({ col, sortCol, sortDir }: { col: SortCol; sortCol: SortCol | null; sortDir: SortDir }) {
+  if (sortCol !== col) return <ArrowUpDown className="ml-1 inline h-3 w-3 opacity-30" />
+  return sortDir === 'asc'
+    ? <ArrowUp className="ml-1 inline h-3 w-3 text-emerald-600" />
+    : <ArrowDown className="ml-1 inline h-3 w-3 text-emerald-600" />
 }
 
 export default function Employees() {
@@ -28,24 +39,81 @@ export default function Employees() {
   const setEmployees = useEmployeesStore((s) => s.setEmployees)
   const setLastSync = useEmployeesStore((s) => s.setLastSync)
   const bamboohr = useSettingsStore((s) => s.bamboohr)
-  const [search, setSearch] = useState('')
-  const [syncing, setSyncing] = useState(false)
-  const [page, setPage] = useState(1)
 
-  const filtered = employees.filter((e) => {
-    const q = search.toLowerCase()
-    return (
-      `${e.firstName} ${e.lastName}`.toLowerCase().includes(q) ||
-      e.workEmail.toLowerCase().includes(q) ||
-      e.department.toLowerCase().includes(q) ||
-      e.jobTitle.toLowerCase().includes(q)
-    )
-  })
+  const [search, setSearch] = useState('')
+  const [deptFilter, setDeptFilter] = useState('all')
+  const [titleFilter, setTitleFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [sortCol, setSortCol] = useState<SortCol | null>(null)
+  const [sortDir, setSortDir] = useState<SortDir>('asc')
+  const [page, setPage] = useState(1)
+  const [syncing, setSyncing] = useState(false)
+  const [reportsOpen, setReportsOpen] = useState(false)
+
+  // Unique department and job title options
+  const depts = useMemo(
+    () => [...new Set(employees.map((e) => e.department).filter(Boolean))].sort(),
+    [employees],
+  )
+  const titles = useMemo(
+    () => [...new Set(employees.map((e) => e.jobTitle).filter(Boolean))].sort(),
+    [employees],
+  )
+
+  const activeFilterCount = [
+    deptFilter !== 'all',
+    titleFilter !== 'all',
+    statusFilter !== 'all',
+    !!search,
+  ].filter(Boolean).length
+
+  const clearFilters = () => {
+    setSearch('')
+    setDeptFilter('all')
+    setTitleFilter('all')
+    setStatusFilter('all')
+    setPage(1)
+  }
+
+  const handleSort = (col: SortCol) => {
+    if (sortCol === col) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortCol(col)
+      setSortDir('asc')
+    }
+    setPage(1)
+  }
+
+  const filtered = useMemo(() => {
+    const q = normalize(search)
+    return employees
+      .filter((e) => {
+        if (q && !normalize(`${e.firstName} ${e.lastName} ${e.workEmail}`).includes(q)) return false
+        if (deptFilter !== 'all' && e.department !== deptFilter) return false
+        if (titleFilter !== 'all' && e.jobTitle !== titleFilter) return false
+        if (statusFilter !== 'all' && e.status !== statusFilter) return false
+        return true
+      })
+      .sort((a, b) => {
+        if (!sortCol) return 0
+        let cmp = 0
+        if (sortCol === 'name') cmp = `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`)
+        if (sortCol === 'payRate') cmp = a.payRate - b.payRate
+        if (sortCol === 'hireDate') cmp = (a.hireDate || '').localeCompare(b.hireDate || '')
+        return sortDir === 'asc' ? cmp : -cmp
+      })
+  }, [employees, search, deptFilter, titleFilter, statusFilter, sortCol, sortDir])
 
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   const handleSearchChange = (value: string) => {
     setSearch(value)
+    setPage(1)
+  }
+
+  const handleFilterChange = (setter: (v: string) => void) => (v: string) => {
+    setter(v)
     setPage(1)
   }
 
@@ -57,7 +125,6 @@ export default function Employees() {
     setSyncing(true)
     try {
       const synced = await fetchBambooDirectory(bamboohr.subdomain, bamboohr.apiKey)
-      // Preserve existing customDeductions and hubstaffUserId when re-syncing
       const merged = synced.map((fresh) => {
         const existing = employees.find((e) => e.id === fresh.id)
         return existing
@@ -83,16 +150,23 @@ export default function Employees() {
           <h1 className="text-2xl font-bold text-gray-900">{t('employees.title')}</h1>
           <p className="mt-1 text-sm text-gray-500">{t('employees.subtitle')}</p>
         </div>
-        <Button onClick={handleSync} disabled={syncing}>
-          <RefreshCw className={`mr-2 h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
-          {syncing ? t('common.syncing') : t('employees.syncButton')}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setReportsOpen(true)}>
+            <FileText className="mr-2 h-4 w-4" />
+            {t('employees.reports.button')}
+          </Button>
+          <Button onClick={handleSync} disabled={syncing}>
+            <RefreshCw className={`mr-2 h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
+            {syncing ? t('common.syncing') : t('employees.syncButton')}
+          </Button>
+        </div>
       </div>
 
       <Card>
         <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1">
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Search */}
+            <div className="relative min-w-48 flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
               <Input
                 placeholder={t('common.search')}
@@ -101,7 +175,51 @@ export default function Employees() {
                 className="pl-9"
               />
             </div>
-            <CardDescription className="whitespace-nowrap">
+
+            {/* Department filter */}
+            <Select value={deptFilter} onValueChange={handleFilterChange(setDeptFilter)}>
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder={t('employees.filters.allDepartments')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('employees.filters.allDepartments')}</SelectItem>
+                {depts.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+              </SelectContent>
+            </Select>
+
+            {/* Job title filter */}
+            <Select value={titleFilter} onValueChange={handleFilterChange(setTitleFilter)}>
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder={t('employees.filters.allTitles')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('employees.filters.allTitles')}</SelectItem>
+                {titles.map((t2) => <SelectItem key={t2} value={t2}>{t2}</SelectItem>)}
+              </SelectContent>
+            </Select>
+
+            {/* Status filter */}
+            <Select value={statusFilter} onValueChange={handleFilterChange(setStatusFilter)}>
+              <SelectTrigger className="w-36">
+                <SelectValue placeholder={t('employees.filters.allStatuses')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('employees.filters.allStatuses')}</SelectItem>
+                <SelectItem value="Active">{t('employees.status.active')}</SelectItem>
+                <SelectItem value="Inactive">{t('employees.status.inactive')}</SelectItem>
+                <SelectItem value="Terminated">{t('employees.status.terminated')}</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Clear filters */}
+            {activeFilterCount > 0 && (
+              <Button variant="ghost" size="sm" onClick={clearFilters} className="text-gray-500">
+                <X className="mr-1 h-3.5 w-3.5" />
+                {t('employees.filters.clearFilters')}
+              </Button>
+            )}
+
+            <CardDescription className="ml-auto whitespace-nowrap">
               {t('common.showing', { count: filtered.length, total: employees.length })}
             </CardDescription>
           </div>
@@ -113,7 +231,14 @@ export default function Employees() {
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-100">
                 <User className="h-7 w-7 text-gray-400" />
               </div>
-              <p className="mt-3 text-sm text-gray-500">{t('employees.noEmployees')}</p>
+              <p className="mt-3 text-sm text-gray-500">
+                {employees.length === 0 ? t('employees.noEmployees') : 'No employees match the current filters.'}
+              </p>
+              {activeFilterCount > 0 && (
+                <Button variant="outline" size="sm" className="mt-3" onClick={clearFilters}>
+                  {t('employees.filters.clearFilters')}
+                </Button>
+              )}
             </div>
           ) : (
             <>
@@ -121,12 +246,33 @@ export default function Employees() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-100 bg-gray-50">
-                      <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">{t('employees.table.name')}</th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">{t('employees.table.department')}</th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">{t('employees.table.jobTitle')}</th>
-                      <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">{t('employees.table.payRate')}</th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">{t('employees.table.hireDate')}</th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">{t('employees.table.status')}</th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                        <button className="flex items-center hover:text-gray-900 transition-colors" onClick={() => handleSort('name')}>
+                          {t('employees.table.name')}
+                          <SortIcon col="name" sortCol={sortCol} sortDir={sortDir} />
+                        </button>
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                        {t('employees.table.department')}
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                        {t('employees.table.jobTitle')}
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">
+                        <button className="flex items-center ml-auto hover:text-gray-900 transition-colors" onClick={() => handleSort('payRate')}>
+                          {t('employees.table.payRate')}
+                          <SortIcon col="payRate" sortCol={sortCol} sortDir={sortDir} />
+                        </button>
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                        <button className="flex items-center hover:text-gray-900 transition-colors" onClick={() => handleSort('hireDate')}>
+                          {t('employees.table.hireDate')}
+                          <SortIcon col="hireDate" sortCol={sortCol} sortDir={sortDir} />
+                        </button>
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                        {t('employees.table.status')}
+                      </th>
                       <th className="px-6 py-3" />
                     </tr>
                   </thead>
@@ -146,8 +292,14 @@ export default function Employees() {
                         </td>
                         <td className="px-6 py-4 text-gray-600">{emp.department || '—'}</td>
                         <td className="px-6 py-4 text-gray-600">{emp.jobTitle || '—'}</td>
-                        <td className="px-6 py-4 text-right font-medium text-gray-900">
-                          {formatCurrency(emp.payRate)}/hr
+                        <td className="px-6 py-4 text-right">
+                          {emp.payRateCurrency === '' ? (
+                            <span className="text-xs font-medium text-amber-600">{t('employees.payRateNotSet')}</span>
+                          ) : (
+                            <span className="font-medium text-gray-900">
+                              {formatPayRate(emp.payRate, emp.payRateCurrency)}/hr
+                            </span>
+                          )}
                         </td>
                         <td className="px-6 py-4 text-gray-500">{formatDate(emp.hireDate)}</td>
                         <td className="px-6 py-4">
@@ -175,6 +327,12 @@ export default function Employees() {
           )}
         </CardContent>
       </Card>
+
+      <EmployeeReports
+        open={reportsOpen}
+        onClose={() => setReportsOpen(false)}
+        employees={filtered}
+      />
     </div>
   )
 }
