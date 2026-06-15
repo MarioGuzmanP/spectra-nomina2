@@ -130,7 +130,7 @@ export async function fetchHubstaffMembers(
   do {
     const extraParams: Record<string, string> = {
       'include[]': 'users',
-      'page[limit]': '100',
+      'page_limit': '100',   // members endpoint uses underscore, not bracket notation
     }
     if (pageStartId) extraParams['page_start_id'] = String(pageStartId)
 
@@ -171,6 +171,7 @@ export async function fetchHubstaffMembers(
   } while (pageStartId && pageCount < MAX_MEMBER_PAGES)
 
   console.log(`[hubstaff] fetchHubstaffMembers — ${allRaw.length} total members across ${pageCount} page(s)`)
+  console.log('[hubstaff] total users fetched:', sideloadedUsers.size)
 
   // Shape A: inline member.user
   let members: HubstaffMember[] = allRaw
