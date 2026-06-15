@@ -208,7 +208,18 @@
       "hubstaff": "Hubstaff",
       "manual": "Manual",
       "editHours": "Editar horas",
-      "noHours": "No se encontraron horas para este período"
+      "noHours": "No se encontraron horas para este período",
+      "status": "Estado",
+      "matched": "Vinculado",
+      "noAccount": "Sin cuenta",
+      "zeroHours": "Sin horas",
+      "edited": "Editado",
+      "filter": "Mostrar",
+      "filterAll": "Todos",
+      "filterWithHours": "Con horas",
+      "filterZeroHours": "Sin horas",
+      "filterNoMatch": "Sin match",
+      "holidaysBanner": "{{count}} feriado(s) en este período"
     },
     "calculate": {
       "title": "Cálculo de Nómina",
@@ -238,6 +249,19 @@
       "failed": "fallidos",
       "retryFailed": "Reintentar fallidos",
       "downloadAll": "Descargar todos los PDF"
+    },
+    "holidays": {
+      "newYear": "Año Nuevo",
+      "epiphany": "Día de Reyes",
+      "altagracia": "Día de la Altagracia",
+      "duarte": "Natalicio de Duarte",
+      "independence": "Día de la Independencia",
+      "goodFriday": "Viernes Santo",
+      "laborDay": "Día del Trabajo",
+      "restoration": "Día de la Restauración",
+      "mercedes": "Día de las Mercedes",
+      "constitution": "Día de la Constitución",
+      "christmas": "Navidad"
     }
   },
   "history": {

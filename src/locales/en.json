@@ -208,7 +208,18 @@
       "hubstaff": "Hubstaff",
       "manual": "Manual",
       "editHours": "Edit hours",
-      "noHours": "No hours data found for this period"
+      "noHours": "No hours data found for this period",
+      "status": "Status",
+      "matched": "Matched",
+      "noAccount": "No Account",
+      "zeroHours": "Zero Hours",
+      "edited": "Edited",
+      "filter": "Show",
+      "filterAll": "All",
+      "filterWithHours": "With Hours",
+      "filterZeroHours": "Zero Hours",
+      "filterNoMatch": "No Match",
+      "holidaysBanner": "{{count}} public holiday(s) in this period"
     },
     "calculate": {
       "title": "Payroll Calculation",
@@ -238,6 +249,19 @@
       "failed": "failed",
       "retryFailed": "Retry Failed",
       "downloadAll": "Download All PDFs"
+    },
+    "holidays": {
+      "newYear": "New Year's Day",
+      "epiphany": "Epiphany (Reyes Magos)",
+      "altagracia": "Our Lady of Altagracia",
+      "duarte": "Juan Pablo Duarte Day",
+      "independence": "Independence Day",
+      "goodFriday": "Good Friday",
+      "laborDay": "Labor Day",
+      "restoration": "Restoration Day",
+      "mercedes": "Our Lady of Mercedes Day",
+      "constitution": "Constitution Day",
+      "christmas": "Christmas Day"
     }
   },
   "history": {
