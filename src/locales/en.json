@@ -219,7 +219,10 @@
       "filterWithHours": "With Hours",
       "filterZeroHours": "Zero Hours",
       "filterNoMatch": "No Match",
-      "holidaysBanner": "{{count}} public holiday(s) in this period"
+      "holidaysBanner": "{{count}} public holiday(s) in this period",
+      "salariedSection": "Salaried Employees (excluded from hourly payroll)",
+      "salariedNote": "These employees have a fixed salary and are not included in hourly payroll calculations.",
+      "salary": "Salary"
     },
     "calculate": {
       "title": "Payroll Calculation",
@@ -236,7 +239,9 @@
       "totals": "Totals",
       "regularPay": "Regular Pay",
       "otPay": "OT Pay",
-      "holidayPay": "Holiday Pay"
+      "holidayPay": "Holiday Pay",
+      "salariedError": "Cannot calculate — the following employees are salaried and cannot be processed in hourly payroll:",
+      "salariedErrorNote": "Go back and remove salaried employees from the hours list."
     },
     "approve": {
       "title": "Approve Payroll",

@@ -48,7 +48,9 @@ export function StepPeriod({ onNext }: Props) {
       return
     }
 
-    const activeEmployees = employees.filter((e) => e.status === 'Active')
+    const activeEmployees = employees.filter(
+      (e) => e.status === 'Active' && e.payType === 'Hourly',
+    )
     if (activeEmployees.length === 0) {
       toast({ variant: 'destructive', title: t('payroll.noActiveEmployees') })
       return

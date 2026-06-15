@@ -41,6 +41,28 @@ async function exchangeRefreshToken(
   }
 }
 
+/**
+ * Flatten query params into a flat Record<string, string>.
+ * Handles both:
+ *  - Flat format (Node querystring): { 'date[start]': '2026-06-01' }
+ *  - Nested format (qs library):     { date: { start: '2026-06-01' } }
+ * In both cases the result is { 'date[start]': '2026-06-01' }
+ */
+function flattenParams(obj: Record<string, unknown>, prefix = ''): Record<string, string> {
+  const result: Record<string, string> = {}
+  for (const [key, val] of Object.entries(obj)) {
+    const fullKey = prefix ? `${prefix}[${key}]` : key
+    if (typeof val === 'string') {
+      result[fullKey] = val
+    } else if (Array.isArray(val) && val.length > 0 && typeof val[0] === 'string') {
+      result[fullKey] = val[0] as string
+    } else if (val !== null && typeof val === 'object') {
+      Object.assign(result, flattenParams(val as Record<string, unknown>, fullKey))
+    }
+  }
+  return result
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' })
@@ -60,17 +82,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   let accessToken: string
 
   if (directAccessToken && typeof directAccessToken === 'string') {
-    // Use provided access token directly — no exchange needed
     accessToken = directAccessToken
   } else {
-    // Exchange refresh token for a fresh access token
     if (typeof refreshToken !== 'string') {
       return res.status(400).json({ error: 'x-hubstaff-refresh-token must be a string' })
     }
     try {
       const exchanged = await exchangeRefreshToken(refreshToken)
       accessToken = exchanged.accessToken
-      // Return new tokens so frontend can cache and save them
       res.setHeader('x-new-refresh-token', exchanged.newRefreshToken)
       res.setHeader('x-new-access-token', exchanged.accessToken)
       res.setHeader('x-access-token-expiry', String(Date.now() + exchanged.expiresIn * 1000))
@@ -80,13 +99,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
-  // Build Hubstaff API URL with any extra query params
-  const qs = new URLSearchParams()
-  for (const [key, val] of Object.entries(extraParams)) {
-    if (typeof val === 'string') qs.append(key, val)
-  }
-  const queryString = qs.toString()
+  // Flatten bracket-keyed params (handles both querystring and qs-parsed formats),
+  // then build the Hubstaff URL with literal bracket syntax — Hubstaff v2 requires
+  // date[start]/date[stop] unencoded (date%5Bstart%5D is NOT accepted).
+  const flat = flattenParams(extraParams as Record<string, unknown>)
+  const queryParts = Object.entries(flat).map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
+  const queryString = queryParts.join('&')
   const url = `https://api.hubstaff.com/v2/${endpoint}${queryString ? `?${queryString}` : ''}`
+
+  console.log('[hubstaff proxy] →', url)
 
   try {
     const response = await fetch(url, {
@@ -96,6 +117,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       },
     })
 
+    console.log('[hubstaff proxy] ←', response.status, endpoint)
+
     if (response.status === 401) {
       return res.status(401).json({ error: 'Unauthorized — access token rejected by Hubstaff. Your refresh token may have expired.' })
     }
@@ -104,6 +127,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     if (!response.ok) {
       const text = await response.text()
+      console.error('[hubstaff proxy] error body:', text)
       return res.status(response.status).json({ error: text || 'Hubstaff API error' })
     }
 

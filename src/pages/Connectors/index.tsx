@@ -119,6 +119,15 @@ function BambooHRConnector() {
   )
 }
 
+function normalizeForMatch(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toUpperCase()
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 function HubstaffMappingPanel({ hubstaffMembers }: { hubstaffMembers: HubstaffMember[] }) {
   const { t } = useTranslation()
   const employees = useEmployeesStore((s) => s.employees)
@@ -129,9 +138,21 @@ function HubstaffMappingPanel({ hubstaffMembers }: { hubstaffMembers: HubstaffMe
     const result: HubstaffMapping[] = hubstaffMembers.map((m) => {
       const existing = saved.find((s) => s.hubstaffUserId === String(m.id))
       if (existing) return existing
-      const autoMatch = employees.find(
+
+      // a) exact email match
+      let autoMatch = employees.find(
         (e) => e.workEmail?.toLowerCase() === m.email?.toLowerCase(),
       )
+
+      // b) normalized full-name fallback (no accents, uppercase)
+      if (!autoMatch && m.name) {
+        const hubName = normalizeForMatch(m.name)
+        autoMatch = employees.find((e) => {
+          const empName = normalizeForMatch(`${e.firstName} ${e.lastName}`)
+          return empName === hubName
+        })
+      }
+
       return {
         hubstaffUserId: String(m.id),
         bambooEmployeeId: autoMatch?.id ?? '',

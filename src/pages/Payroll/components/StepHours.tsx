@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Clock, Pencil, CheckCircle2, AlertTriangle, UserX, CalendarDays } from 'lucide-react'
+import { Clock, Pencil, CheckCircle2, AlertTriangle, UserX, CalendarDays, ChevronDown, ChevronRight } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -30,6 +30,12 @@ export function StepHours({ employeeHours, startDate, endDate, onNext, onBack }:
   const employees = useEmployeesStore((s) => s.employees)
   const [hours, setHours] = useState<EmployeeHoursEntry[]>(employeeHours)
   const [filter, setFilter] = useState<Filter>('all')
+  const [showSalaried, setShowSalaried] = useState(false)
+
+  const salariedEmployees = useMemo(
+    () => employees.filter((e) => e.status === 'Active' && e.payType !== 'Hourly'),
+    [employees],
+  )
 
   const holidays = useMemo(
     () => getDRHolidaysInRange(startDate, endDate),
@@ -232,6 +238,41 @@ export function StepHours({ employeeHours, startDate, endDate, onNext, onBack }:
           </div>
         </CardContent>
       </Card>
+
+      {/* Salaried employees — excluded, shown collapsed */}
+      {salariedEmployees.length > 0 && (
+        <div className="rounded-xl border border-gray-200">
+          <button
+            type="button"
+            onClick={() => setShowSalaried((v) => !v)}
+            className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-gray-50 rounded-xl transition-colors"
+          >
+            <span className="text-sm font-medium text-gray-600">
+              {t('payroll.review.salariedSection')} ({salariedEmployees.length})
+            </span>
+            {showSalaried
+              ? <ChevronDown className="h-4 w-4 text-gray-400" />
+              : <ChevronRight className="h-4 w-4 text-gray-400" />}
+          </button>
+          {showSalaried && (
+            <div className="border-t border-gray-100 px-4 py-3 space-y-1">
+              <p className="text-xs text-gray-400 mb-2">{t('payroll.review.salariedNote')}</p>
+              {salariedEmployees.map((e) => (
+                <div key={e.id} className="flex items-center gap-2 py-1 opacity-60">
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-100 text-[10px] font-semibold text-gray-500">
+                    {getInitials(e.firstName, e.lastName)}
+                  </div>
+                  <span className="text-xs text-gray-600">{e.firstName} {e.lastName}</span>
+                  <span className="text-[10px] text-gray-400">— {e.jobTitle}</span>
+                  <Badge variant="secondary" className="ml-auto text-[10px]">
+                    {t('payroll.review.salary')}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="flex gap-3">
         <Button variant="outline" onClick={onBack}>{t('common.back')}</Button>

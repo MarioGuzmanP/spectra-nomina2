@@ -1,9 +1,9 @@
 # CHECKPOINT.md — Spectra Payroll System
 
-**Last updated:** 2026-06-10  
-**Current Phase:** SYSTEM COMPLETE — All 9 phases done  
+**Last updated:** 2026-06-15  
+**Current Phase:** SYSTEM COMPLETE — Post-launch bug fixes  
 **Git branch:** main  
-**Last commit:** fix: Phase 9 QA pass
+**Last commit:** fix: Hubstaff bracket params + payType Hourly filter
 
 ---
 
@@ -31,6 +31,20 @@ All phases (1–9) implemented and verified.
 | 9 | QA pass: i18n completeness, bundle splitting, bug fixes | ✅ |
 
 ---
+
+## Post-launch fixes (2026-06-12 → 2026-06-15)
+
+| Fix | Files |
+|-----|-------|
+| Hubstaff auth: refresh token ↔ access token exchange, token rotation | `api/hubstaff.ts`, `src/lib/connectors/hubstaff.ts`, `src/store/settingsStore.ts` |
+| Hubstaff bracket params: `date[start]`/`date[stop]` now sent without percent-encoding | `api/hubstaff.ts`, `src/lib/connectors/hubstaff.ts` |
+| BambooHR payType filter: only `Hourly` employees enter payroll flow | `src/pages/Payroll/components/StepPeriod.tsx` |
+| Hours review: match status badges, filters, DR holiday banner, salaried section | `src/pages/Payroll/components/StepHours.tsx`, `src/lib/drHolidays.ts` |
+| StepCalculate guard: rejects salaried employees with clear error UI | `src/pages/Payroll/components/StepCalculate.tsx` |
+| Connectors: name-normalization fallback for Hubstaff auto-matching | `src/pages/Connectors/index.tsx` |
+| Proxy logging: `console.log` for URL and response status on each call | `api/hubstaff.ts` |
+| ErrorBoundary on Connectors page | `src/components/ErrorBoundary.tsx` |
+| Select crash: `value=""` → `value="__none__"` sentinel | `src/pages/Connectors/index.tsx` |
 
 ## To Deploy
 

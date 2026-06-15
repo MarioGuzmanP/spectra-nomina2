@@ -23,12 +23,20 @@ export function StepCalculate({ employeeHours, frequency, onNext, onBack }: Prop
   const fiscal = useSettingsStore((s) => s.fiscal)
   const payrollSettings = useSettingsStore((s) => s.payroll)
 
+  const salariedSlipthrough = useMemo(() =>
+    employeeHours
+      .map((h) => employees.find((e) => e.id === h.employeeId))
+      .filter((e) => e && e.payType !== 'Hourly'),
+    [employeeHours, employees],
+  )
+
   const { entries, totals } = useMemo(() => {
     const computedEntries: PayrollEntry[] = []
 
     for (const h of employeeHours) {
       const emp = employees.find((e) => e.id === h.employeeId)
       if (!emp) continue
+      if (emp.payType !== 'Hourly') continue  // defensive — should never reach here
 
       const calculation = calculatePayroll({
         employeeId: emp.id,
@@ -59,6 +67,23 @@ export function StepCalculate({ employeeHours, frequency, onNext, onBack }: Prop
 
     return { entries: computedEntries, totals }
   }, [employeeHours, employees, fiscal, payrollSettings, frequency])
+
+  if (salariedSlipthrough.length > 0) {
+    return (
+      <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-sm text-red-700 space-y-2">
+        <p className="font-semibold">{t('payroll.calculate.salariedError')}</p>
+        <ul className="list-disc pl-4 space-y-0.5">
+          {salariedSlipthrough.map((e) => e && (
+            <li key={e.id}>{e.firstName} {e.lastName}</li>
+          ))}
+        </ul>
+        <p className="text-xs text-red-500 pt-1">{t('payroll.calculate.salariedErrorNote')}</p>
+        <button type="button" onClick={onBack} className="mt-2 text-xs underline text-red-600">
+          {t('common.back')}
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-4">

@@ -219,7 +219,10 @@
       "filterWithHours": "Con horas",
       "filterZeroHours": "Sin horas",
       "filterNoMatch": "Sin match",
-      "holidaysBanner": "{{count}} feriado(s) en este período"
+      "holidaysBanner": "{{count}} feriado(s) en este período",
+      "salariedSection": "Empleados asalariados (excluidos de nómina por hora)",
+      "salariedNote": "Estos empleados tienen salario fijo y no se incluyen en los cálculos de nómina por hora.",
+      "salary": "Salario"
     },
     "calculate": {
       "title": "Cálculo de Nómina",
@@ -236,7 +239,9 @@
       "totals": "Totales",
       "regularPay": "Pago regular",
       "otPay": "Pago horas extra",
-      "holidayPay": "Pago días feriados"
+      "holidayPay": "Pago días feriados",
+      "salariedError": "No se puede calcular — los siguientes empleados son asalariados y no pueden procesarse en nómina por hora:",
+      "salariedErrorNote": "Regresa y elimina los empleados asalariados de la lista de horas."
     },
     "approve": {
       "title": "Aprobar Nómina",

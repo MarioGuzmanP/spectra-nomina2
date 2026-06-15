@@ -16,8 +16,12 @@ export interface HubstaffTokenUpdate {
 }
 
 function buildUrl(endpoint: string, extra?: Record<string, string>): string {
-  const params = new URLSearchParams({ endpoint, ...(extra ?? {}) })
-  return `/api/hubstaff?${params.toString()}`
+  // Build manually so bracket-keyed params (e.g. date[start]) are NOT percent-encoded.
+  // Hubstaff v2 requires literal brackets in query param names.
+  const base = `/api/hubstaff?endpoint=${encodeURIComponent(endpoint)}`
+  if (!extra) return base
+  const parts = Object.entries(extra).map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
+  return parts.length > 0 ? `${base}&${parts.join('&')}` : base
 }
 
 async function fetchHubstaff(
