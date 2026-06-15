@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CheckCircle2, XCircle, Loader2, Plug, Link2, Mail } from 'lucide-react'
+import { CheckCircle2, XCircle, Loader2, Plug, Link2, Mail, Wand2, Info } from 'lucide-react'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -133,46 +133,57 @@ function HubstaffMappingPanel({ hubstaffMembers }: { hubstaffMembers: HubstaffMe
   const employees = useEmployeesStore((s) => s.employees)
   const hubstaff = useSettingsStore((s) => s.hubstaff)
   const updateHubstaff = useSettingsStore((s) => s.updateHubstaff)
-  const [localMapping, setLocalMapping] = useState<HubstaffMapping[]>(() => {
+
+  const hasNames = hubstaffMembers.some((m) => !!m.name)
+
+  const buildInitialMapping = (): HubstaffMapping[] => {
     const saved = hubstaff.employeeMapping
-    const result: HubstaffMapping[] = hubstaffMembers.map((m) => {
+    return hubstaffMembers.map((m) => {
       const existing = saved.find((s) => s.hubstaffUserId === String(m.id))
       if (existing) return existing
 
-      // a) exact email match
-      let autoMatch = employees.find(
-        (e) => e.workEmail?.toLowerCase() === m.email?.toLowerCase(),
-      )
+      // Auto-match by email (only possible when API returns emails)
+      let autoMatch = m.email
+        ? employees.find((e) => e.workEmail?.toLowerCase() === m.email.toLowerCase())
+        : undefined
 
-      // b) normalized full-name fallback (no accents, uppercase)
+      // Auto-match by normalized full-name
       if (!autoMatch && m.name) {
         const hubName = normalizeForMatch(m.name)
-        autoMatch = employees.find((e) => {
-          const empName = normalizeForMatch(`${e.firstName} ${e.lastName}`)
-          return empName === hubName
-        })
+        autoMatch = employees.find(
+          (e) => normalizeForMatch(`${e.firstName} ${e.lastName}`) === hubName,
+        )
       }
 
-      return {
-        hubstaffUserId: String(m.id),
-        bambooEmployeeId: autoMatch?.id ?? '',
-        autoMatched: !!autoMatch,
-      }
+      return { hubstaffUserId: String(m.id), bambooEmployeeId: autoMatch?.id ?? '', autoMatched: !!autoMatch }
     })
-    return result
-  })
+  }
+
+  const [localMapping, setLocalMapping] = useState<HubstaffMapping[]>(buildInitialMapping)
 
   const NONE = '__none__'
 
   const handleChange = (hubstaffUserId: string, v: string) => {
     const bambooEmployeeId = v === NONE ? '' : v
     setLocalMapping((prev) =>
-      prev.map((m) =>
-        m.hubstaffUserId === hubstaffUserId
-          ? { ...m, bambooEmployeeId, autoMatched: false }
-          : m,
-      ),
+      prev.map((m) => m.hubstaffUserId === hubstaffUserId ? { ...m, bambooEmployeeId, autoMatched: false } : m),
     )
+  }
+
+  const handleAutoMatchByName = () => {
+    setLocalMapping((prev) =>
+      prev.map((m) => {
+        if (m.bambooEmployeeId) return m  // keep existing manual maps
+        const member = hubstaffMembers.find((h) => String(h.id) === m.hubstaffUserId)
+        if (!member?.name) return m
+        const hubName = normalizeForMatch(member.name)
+        const match = employees.find(
+          (e) => normalizeForMatch(`${e.firstName} ${e.lastName}`) === hubName,
+        )
+        return match ? { ...m, bambooEmployeeId: match.id, autoMatched: true } : m
+      }),
+    )
+    toast({ title: t('connectors.hubstaff.autoMatchDone') })
   }
 
   const handleSave = () => {
@@ -181,24 +192,44 @@ function HubstaffMappingPanel({ hubstaffMembers }: { hubstaffMembers: HubstaffMe
   }
 
   const activeEmployees = employees.filter((e) => e.status === 'Active')
+  const mappedCount = localMapping.filter((m) => !!m.bambooEmployeeId).length
 
   return (
     <div className="space-y-4">
       <Separator />
-      <div>
-        <p className="text-sm font-medium text-gray-900">{t('connectors.hubstaff.mapping')}</p>
-        <p className="text-xs text-gray-500 mt-0.5">{t('connectors.hubstaff.mappingSubtitle')}</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium text-gray-900">{t('connectors.hubstaff.mapping')}</p>
+          <p className="text-xs text-gray-500 mt-0.5">
+            {t('connectors.hubstaff.mappingProgress', { mapped: mappedCount, total: localMapping.length })}
+          </p>
+        </div>
+        {hasNames && (
+          <Button size="sm" variant="outline" onClick={handleAutoMatchByName} className="shrink-0">
+            <Wand2 className="mr-1.5 h-3.5 w-3.5" />
+            {t('connectors.hubstaff.autoMatchByName')}
+          </Button>
+        )}
       </div>
-      <div className="space-y-3">
+
+      {/* Info note when Hubstaff API doesn't return names */}
+      {!hasNames && (
+        <div className="flex items-start gap-2 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2.5">
+          <Info className="h-3.5 w-3.5 text-blue-500 mt-0.5 shrink-0" />
+          <p className="text-xs text-blue-700">{t('connectors.hubstaff.noNamesNote')}</p>
+        </div>
+      )}
+
+      <div className="space-y-2">
         {localMapping.map((m) => {
           const member = hubstaffMembers.find((h) => String(h.id) === m.hubstaffUserId)
+          const displayName = member?.name || `User #${m.hubstaffUserId}`
+          const displayEmail = member?.email || ''
           return (
             <div key={m.hubstaffUserId} className="flex items-center gap-3">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">
-                  {member?.name ?? m.hubstaffUserId}
-                </p>
-                <p className="text-xs text-gray-400 truncate">{member?.email}</p>
+                <p className="text-sm font-medium text-gray-900 truncate">{displayName}</p>
+                {displayEmail && <p className="text-xs text-gray-400 truncate">{displayEmail}</p>}
               </div>
               <Link2 className="h-4 w-4 shrink-0 text-gray-300" />
               <div className="w-56">
@@ -228,6 +259,7 @@ function HubstaffMappingPanel({ hubstaffMembers }: { hubstaffMembers: HubstaffMe
           )
         })}
       </div>
+
       <Button size="sm" onClick={handleSave}>{t('connectors.hubstaff.saveMapping')}</Button>
     </div>
   )

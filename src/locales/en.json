@@ -222,7 +222,10 @@
       "holidaysBanner": "{{count}} public holiday(s) in this period",
       "salariedSection": "Salaried Employees (excluded from hourly payroll)",
       "salariedNote": "These employees have a fixed salary and are not included in hourly payroll calculations.",
-      "salary": "Salary"
+      "salary": "Salary",
+      "needsMapping": "Needs Mapping",
+      "unmappedBanner": "{{count}} employee(s) have no Hubstaff mapping — their hours will be 0.",
+      "configureMapping": "Configure Mapping →"
     },
     "calculate": {
       "title": "Payroll Calculation",
@@ -325,7 +328,11 @@
       "autoMatched": "Auto-matched by email",
       "unmatched": "Not matched",
       "saveMapping": "Save Mapping",
-      "mappingSaved": "Mapping saved successfully"
+      "mappingSaved": "Mapping saved successfully",
+      "autoMatchByName": "Auto-match by name",
+      "autoMatchDone": "Auto-match complete",
+      "mappingProgress": "{{mapped}} of {{total}} Hubstaff users mapped",
+      "noNamesNote": "Hubstaff did not return user names for this organization. Use the User ID (shown as \"User #ID\") to identify members from your Hubstaff admin panel, then select the matching employee on the right."
     },
     "email": {
       "title": "Email",

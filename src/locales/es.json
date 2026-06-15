@@ -222,7 +222,10 @@
       "holidaysBanner": "{{count}} feriado(s) en este período",
       "salariedSection": "Empleados asalariados (excluidos de nómina por hora)",
       "salariedNote": "Estos empleados tienen salario fijo y no se incluyen en los cálculos de nómina por hora.",
-      "salary": "Salario"
+      "salary": "Salario",
+      "needsMapping": "Falta mapeo",
+      "unmappedBanner": "{{count}} empleado(s) no tienen mapeo de Hubstaff — sus horas serán 0.",
+      "configureMapping": "Configurar mapeo →"
     },
     "calculate": {
       "title": "Cálculo de Nómina",
@@ -325,7 +328,11 @@
       "autoMatched": "Emparejado automáticamente por correo",
       "unmatched": "Sin emparejar",
       "saveMapping": "Guardar mapeo",
-      "mappingSaved": "Mapeo guardado exitosamente"
+      "mappingSaved": "Mapeo guardado exitosamente",
+      "autoMatchByName": "Auto-match por nombre",
+      "autoMatchDone": "Auto-match completado",
+      "mappingProgress": "{{mapped}} de {{total}} usuarios de Hubstaff mapeados",
+      "noNamesNote": "Hubstaff no devolvió nombres de usuario para esta organización. Usa el ID de usuario (mostrado como \"User #ID\") para identificar miembros desde el panel de Hubstaff, luego selecciona el empleado correspondiente a la derecha."
     },
     "email": {
       "title": "Correo Electrónico",

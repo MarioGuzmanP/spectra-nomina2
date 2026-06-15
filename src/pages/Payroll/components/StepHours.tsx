@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Clock, Pencil, CheckCircle2, AlertTriangle, UserX, CalendarDays, ChevronDown, ChevronRight } from 'lucide-react'
+import { Clock, Pencil, CheckCircle2, AlertTriangle, MapPin, CalendarDays, ChevronDown, ChevronRight } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -79,6 +80,24 @@ export function StepHours({ employeeHours, startDate, endDate, onNext, onBack }:
 
   return (
     <div className="space-y-4">
+      {/* Unmapped employees banner */}
+      {filterCounts['no-match'] > 0 && (
+        <div className="flex items-center justify-between gap-4 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <MapPin className="h-4 w-4 shrink-0 text-orange-500" />
+            <span className="text-xs text-orange-700">
+              {t('payroll.review.unmappedBanner', { count: filterCounts['no-match'] })}
+            </span>
+          </div>
+          <Link
+            to="/connectors"
+            className="shrink-0 text-xs font-semibold text-orange-700 underline underline-offset-2 hover:text-orange-900"
+          >
+            {t('payroll.review.configureMapping')}
+          </Link>
+        </div>
+      )}
+
       {/* Holiday banner */}
       {holidays.length > 0 && (
         <div className="flex flex-wrap items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
@@ -316,9 +335,9 @@ function MatchBadge({
   }
   if (!entry.hubstaffUserId) {
     return (
-      <Badge variant="secondary">
-        <UserX className="mr-1 h-2.5 w-2.5" />
-        {t('payroll.review.noAccount')}
+      <Badge variant="warning">
+        <MapPin className="mr-1 h-2.5 w-2.5" />
+        {t('payroll.review.needsMapping')}
       </Badge>
     )
   }

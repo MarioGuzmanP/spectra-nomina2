@@ -113,18 +113,14 @@ export async function fetchHubstaffMembers(
   orgId: string,
   tokenState: HubstaffTokenState,
 ): Promise<{ members: HubstaffMember[]; tokenUpdate: HubstaffTokenUpdate }> {
-  const { res, tokenUpdate } = await fetchHubstaff(`organizations/${orgId}/members`, tokenState)
+  // include[]=users asks Hubstaff to sideload user details; works on some API plans
+  const { res, tokenUpdate } = await fetchHubstaff(`organizations/${orgId}/members`, tokenState, { 'include[]': 'users' })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: 'Unknown error' })) as { error?: string }
     throw new Error(err.error ?? `Hubstaff error ${res.status}`)
   }
 
   const data = await res.json() as MembersRaw
-
-  // Log first element of raw response for structure verification
-  const firstMember = data.members?.[0]
-  console.log('[hubstaff] /members raw first element:', JSON.stringify(firstMember))
-  console.log('[hubstaff] /members root keys:', Object.keys(data))
 
   // Shape A: user details nested inline under member.user
   let members: HubstaffMember[] = (data.members ?? [])
@@ -147,7 +143,18 @@ export async function fetchHubstaffMembers(
       .filter((m): m is HubstaffMember => m !== null)
   }
 
-  console.log('[hubstaff] fetchHubstaffMembers → raw members:', data.members?.length ?? 0, 'parsed:', members.length)
+  // Shape C: flat members with no user details (API returned user_id only)
+  // Return stub records so the mapping UI can still show User #ID rows
+  if (members.length === 0 && (data.members ?? []).length > 0) {
+    members = (data.members ?? []).map((m) => ({
+      id: m.user_id,
+      name: '',    // no name available
+      email: '',   // no email available
+      status: 'active',
+    }))
+  }
+
+  console.log('[hubstaff] fetchHubstaffMembers → total:', members.length, 'hasNames:', members.some(m => !!m.name))
   return { members, tokenUpdate }
 }
 
@@ -184,12 +191,6 @@ export async function fetchHoursForPeriod(
   }
 
   const data = await res.json() as ActivitiesRaw
-
-  // Log root keys and user/member counts for structure verification
-  console.log('[hubstaff] /activities/daily root keys:', Object.keys(data))
-  console.log('[hubstaff] users array length:', data.users?.length ?? 'key missing')
-  console.log('[hubstaff] first activity:', JSON.stringify(data.daily_activities?.[0]))
-
   const activities = data.daily_activities ?? []
 
   // Primary: root-level users array (confirmed in Hubstaff v2 spec)
@@ -209,8 +210,6 @@ export async function fetchHoursForPeriod(
         email: m.user!.email ?? '',
       }))
   }
-
-  console.log('[hubstaff] fetchHoursForPeriod → activities:', activities.length, 'users resolved:', users.length)
 
   const userDailyHours: Record<string, Record<string, number>> = {}
   for (const activity of activities) {
