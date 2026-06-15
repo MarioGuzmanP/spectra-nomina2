@@ -469,8 +469,10 @@ function HubstaffMappingPanel({ hubstaffMembers }: { hubstaffMembers: HubstaffMe
               )
               const hubOptions: SearchOption[] = hubstaffMembers.map((h) => ({
                 value: String(h.id),
-                label: h.name || `User #${h.id}`,
-                sublabel: h.email || undefined,
+                // "Samantha Douglas — samantha.douglas@spectramanagement.net"
+                label: h.name
+                  ? (h.email ? `${h.name} — ${h.email}` : h.name)
+                  : `User #${h.id}`,
               }))
               return (
                 <div key={emp.id} className="flex items-center gap-3">

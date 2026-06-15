@@ -55,7 +55,10 @@ function flattenParams(obj: Record<string, unknown>, prefix = ''): Record<string
     if (typeof val === 'string') {
       result[fullKey] = val
     } else if (Array.isArray(val) && val.length > 0 && typeof val[0] === 'string') {
-      result[fullKey] = val[0] as string
+      // Restore [] suffix so 'include[]=users' is forwarded correctly.
+      // qs strips brackets during parsing: include[]=users → { include: ['users'] }
+      // We reconstruct: { 'include[]': 'users' } → include[]=users in outgoing URL
+      result[`${fullKey}[]`] = val[0] as string
     } else if (val !== null && typeof val === 'object') {
       Object.assign(result, flattenParams(val as Record<string, unknown>, fullKey))
     }

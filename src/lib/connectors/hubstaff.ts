@@ -164,14 +164,16 @@ export async function fetchHubstaffMembers(
     }
 
     allRaw.push(...(data.members ?? []))
-    for (const u of data.users ?? []) sideloadedUsers.set(u.id, { name: u.name, email: u.email ?? '' })
+    const pageUsers = data.users ?? []
+    for (const u of pageUsers) sideloadedUsers.set(u.id, { name: u.name, email: u.email ?? '' })
+
+    console.log(`[hubstaff members] page ${pageCount + 1} users:`, pageUsers.length, 'total so far:', sideloadedUsers.size)
 
     pageStartId = data.pagination?.next_page_start_id ?? null
     pageCount++
   } while (pageStartId && pageCount < MAX_MEMBER_PAGES)
 
-  console.log(`[hubstaff] fetchHubstaffMembers — ${allRaw.length} total members across ${pageCount} page(s)`)
-  console.log('[hubstaff] total users fetched:', sideloadedUsers.size)
+  console.log(`[hubstaff members] TOTAL users fetched: ${sideloadedUsers.size} across ${pageCount} page(s)`)
 
   // Shape A: inline member.user
   let members: HubstaffMember[] = allRaw
