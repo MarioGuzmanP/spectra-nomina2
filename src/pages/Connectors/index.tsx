@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { CheckCircle2, XCircle, Loader2, Plug, Link2, Mail } from 'lucide-react'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -129,7 +130,7 @@ function HubstaffMappingPanel({ hubstaffMembers }: { hubstaffMembers: HubstaffMe
       const existing = saved.find((s) => s.hubstaffUserId === String(m.id))
       if (existing) return existing
       const autoMatch = employees.find(
-        (e) => e.workEmail.toLowerCase() === m.email.toLowerCase(),
+        (e) => e.workEmail?.toLowerCase() === m.email?.toLowerCase(),
       )
       return {
         hubstaffUserId: String(m.id),
@@ -442,7 +443,7 @@ function EmailConnector() {
   )
 }
 
-export default function Connectors() {
+function ConnectorsInner() {
   const { t } = useTranslation()
   return (
     <div className="space-y-6">
@@ -456,5 +457,13 @@ export default function Connectors() {
         <EmailConnector />
       </div>
     </div>
+  )
+}
+
+export default function Connectors() {
+  return (
+    <ErrorBoundary>
+      <ConnectorsInner />
+    </ErrorBoundary>
   )
 }
