@@ -26,6 +26,7 @@ export function StepPeriod({ onNext }: Props) {
   const { t } = useTranslation()
   const payrollSettings = useSettingsStore((s) => s.payroll)
   const hubstaff = useSettingsStore((s) => s.hubstaff)
+  const updateHubstaff = useSettingsStore((s) => s.updateHubstaff)
   const employees = useEmployeesStore((s) => s.employees)
 
   const today = new Date()
@@ -56,16 +57,30 @@ export function StepPeriod({ onNext }: Props) {
     setLoading(true)
     let hoursMap: Record<string, { regular: number; ot: number; total: number }> = {}
 
-    if (hubstaff.connected && hubstaff.accessToken && hubstaff.organizationId) {
+    if (hubstaff.connected && hubstaff.refreshToken && hubstaff.organizationId) {
       try {
-        hoursMap = await fetchHoursForPeriod(
+        const result = await fetchHoursForPeriod(
           hubstaff.organizationId,
-          hubstaff.accessToken,
+          {
+            refreshToken: hubstaff.refreshToken,
+            cachedAccessToken: hubstaff.cachedAccessToken,
+            cachedAccessTokenExpiry: hubstaff.cachedAccessTokenExpiry,
+          },
           startDate,
           endDate,
           payrollSettings.otThresholdHours,
           frequency,
         )
+        hoursMap = result.hoursMap
+        // Save rotated tokens
+        const { tokenUpdate } = result
+        if (tokenUpdate.newRefreshToken || tokenUpdate.newAccessToken) {
+          updateHubstaff({
+            ...(tokenUpdate.newRefreshToken ? { refreshToken: tokenUpdate.newRefreshToken } : {}),
+            ...(tokenUpdate.newAccessToken ? { cachedAccessToken: tokenUpdate.newAccessToken } : {}),
+            ...(tokenUpdate.newAccessTokenExpiry ? { cachedAccessTokenExpiry: tokenUpdate.newAccessTokenExpiry } : {}),
+          })
+        }
       } catch (err) {
         const msg = err instanceof Error ? err.message : t('errors.fetchFailed')
         toast({ variant: 'destructive', title: 'Hubstaff fetch failed', description: msg + ' — proceeding with manual entry.' })

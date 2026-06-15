@@ -129,11 +129,13 @@ export interface BambooHRConfig {
 }
 
 export interface HubstaffConfig {
-  accessToken: string
+  refreshToken: string
   organizationId: string
   connected: boolean
   lastSync?: string
   employeeMapping: HubstaffMapping[]
+  cachedAccessToken?: string
+  cachedAccessTokenExpiry?: number  // Unix ms — used to skip exchange when token is still valid
 }
 
 export interface HubstaffMapping {

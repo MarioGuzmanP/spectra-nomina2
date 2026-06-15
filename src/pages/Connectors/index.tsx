@@ -118,7 +118,7 @@ function BambooHRConnector() {
   )
 }
 
-function HubstaffMapping({ hubstaffMembers }: { hubstaffMembers: HubstaffMember[] }) {
+function HubstaffMappingPanel({ hubstaffMembers }: { hubstaffMembers: HubstaffMember[] }) {
   const { t } = useTranslation()
   const employees = useEmployeesStore((s) => s.employees)
   const hubstaff = useSettingsStore((s) => s.hubstaff)
@@ -218,32 +218,54 @@ function HubstaffConnector() {
   const [availableOrgs, setAvailableOrgs] = useState<HubstaffOrganization[]>([])
 
   useEffect(() => {
-    if (hubstaff.connected && hubstaff.accessToken && hubstaff.organizationId) {
+    if (hubstaff.connected && hubstaff.refreshToken && hubstaff.organizationId) {
       setLoadingMembers(true)
-      fetchHubstaffMembers(hubstaff.organizationId, hubstaff.accessToken)
-        .then(setMembers)
+      fetchHubstaffMembers(hubstaff.organizationId, {
+        refreshToken: hubstaff.refreshToken,
+        cachedAccessToken: hubstaff.cachedAccessToken,
+        cachedAccessTokenExpiry: hubstaff.cachedAccessTokenExpiry,
+      })
+        .then(({ members: fetched, tokenUpdate }) => {
+          setMembers(fetched)
+          if (tokenUpdate.newRefreshToken || tokenUpdate.newAccessToken) {
+            updateHubstaff({
+              ...(tokenUpdate.newRefreshToken ? { refreshToken: tokenUpdate.newRefreshToken } : {}),
+              ...(tokenUpdate.newAccessToken ? { cachedAccessToken: tokenUpdate.newAccessToken } : {}),
+              ...(tokenUpdate.newAccessTokenExpiry ? { cachedAccessTokenExpiry: tokenUpdate.newAccessTokenExpiry } : {}),
+            })
+          }
+        })
         .catch(() => setMembers([]))
         .finally(() => setLoadingMembers(false))
     }
-  }, [hubstaff.connected, hubstaff.accessToken, hubstaff.organizationId])
+  }, [hubstaff.connected, hubstaff.refreshToken, hubstaff.organizationId])  // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleTest = async () => {
-    // Read fresh from store at call-time — avoids stale closure if the user
-    // typed the token and clicked the button before React re-rendered.
-    const token = useSettingsStore.getState().hubstaff.accessToken
+    const token = useSettingsStore.getState().hubstaff.refreshToken
     if (!token) {
       toast({ variant: 'destructive', title: t('errors.apiKeyMissing') })
       return
     }
     setTesting(true)
     try {
-      // Test only the token — hit GET /v2/organizations (no org ID needed)
-      const orgs = await testHubstaffToken(token)
-      setAvailableOrgs(orgs)
-      updateHubstaff({ connected: true })
-      const orgHint = orgs.length > 0
-        ? `Token valid. Found ${orgs.length} org(s): ${orgs.map((o) => `${o.name} (ID: ${o.id})`).join(', ')}`
-        : 'Token valid. No organizations found.'
+      const { organizations, tokenUpdate } = await testHubstaffToken({
+        refreshToken: token,
+        cachedAccessToken: useSettingsStore.getState().hubstaff.cachedAccessToken,
+        cachedAccessTokenExpiry: useSettingsStore.getState().hubstaff.cachedAccessTokenExpiry,
+      })
+
+      // Save rotated tokens
+      updateHubstaff({
+        connected: true,
+        ...(tokenUpdate.newRefreshToken ? { refreshToken: tokenUpdate.newRefreshToken } : {}),
+        ...(tokenUpdate.newAccessToken ? { cachedAccessToken: tokenUpdate.newAccessToken } : {}),
+        ...(tokenUpdate.newAccessTokenExpiry ? { cachedAccessTokenExpiry: tokenUpdate.newAccessTokenExpiry } : {}),
+      })
+
+      setAvailableOrgs(organizations)
+      const orgHint = organizations.length > 0
+        ? `${t('connectors.hubstaff.foundOrgs')}: ${organizations.map((o) => `${o.name} (ID: ${o.id})`).join(', ')}`
+        : t('connectors.hubstaff.noOrgsFound')
       toast({ variant: 'success', title: t('connectors.status.connected'), description: orgHint })
     } catch (err) {
       updateHubstaff({ connected: false })
@@ -272,13 +294,14 @@ function HubstaffConnector() {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-1.5">
-          <Label>{t('connectors.hubstaff.accessToken')}</Label>
+          <Label>{t('connectors.hubstaff.refreshToken')}</Label>
           <Input
             type="password"
-            placeholder={t('connectors.hubstaff.accessTokenPlaceholder')}
-            value={hubstaff.accessToken}
-            onChange={(e) => updateHubstaff({ accessToken: e.target.value, connected: false })}
+            placeholder={t('connectors.hubstaff.refreshTokenPlaceholder')}
+            value={hubstaff.refreshToken}
+            onChange={(e) => updateHubstaff({ refreshToken: e.target.value, connected: false, cachedAccessToken: undefined, cachedAccessTokenExpiry: undefined })}
           />
+          <p className="text-xs text-gray-400">{t('connectors.hubstaff.refreshTokenHelp')}</p>
         </div>
         <div className="space-y-1.5">
           <Label>{t('connectors.hubstaff.organizationId')}</Label>
@@ -287,10 +310,9 @@ function HubstaffConnector() {
             value={hubstaff.organizationId}
             onChange={(e) => updateHubstaff({ organizationId: e.target.value })}
           />
-          {/* Show available orgs after a successful token test so user can pick the right ID */}
           {availableOrgs.length > 0 && (
             <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 space-y-1.5">
-              <p className="text-xs font-semibold text-emerald-800">Available organizations — click to use:</p>
+              <p className="text-xs font-semibold text-emerald-800">{t('connectors.hubstaff.selectOrg')}</p>
               {availableOrgs.map((org) => (
                 <button
                   key={org.id}
@@ -317,7 +339,7 @@ function HubstaffConnector() {
               {t('connectors.loadingMembers')}
             </div>
           ) : members.length > 0 ? (
-            <HubstaffMapping hubstaffMembers={members} />
+            <HubstaffMappingPanel hubstaffMembers={members} />
           ) : null
         )}
       </CardContent>

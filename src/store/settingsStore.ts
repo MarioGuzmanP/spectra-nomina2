@@ -28,7 +28,7 @@ const defaultBambooHR: BambooHRConfig = {
 }
 
 const defaultHubstaff: HubstaffConfig = {
-  accessToken: '',
+  refreshToken: '',
   organizationId: '',
   connected: false,
   employeeMapping: [],
