@@ -86,6 +86,31 @@ export function StepPeriod({ onNext }: Props) {
     let hoursMap: Record<string, { regular: number; ot: number; total: number }> = {}
     let hubUsers: HubstaffActivityUser[] = []
 
+    const missingToken = !hubstaff.refreshToken
+    const missingOrg = !hubstaff.organizationId
+    const notConnected = !hubstaff.connected
+
+    if (notConnected || missingToken || missingOrg) {
+      const reasons = [
+        notConnected && 'not connected',
+        missingToken && 'no refresh token',
+        missingOrg && 'no organization ID',
+      ].filter(Boolean).join(', ')
+      console.warn('[StepPeriod] Hubstaff fetch skipped:', reasons, {
+        connected: hubstaff.connected,
+        hasToken: !!hubstaff.refreshToken,
+        orgId: hubstaff.organizationId,
+      })
+      if (!notConnected) {
+        // Connected but token/org missing — warn the user visibly
+        toast({
+          variant: 'destructive',
+          title: 'Hubstaff not fully configured',
+          description: `Go to Settings → Connectors and reconnect Hubstaff (${reasons}).`,
+        })
+      }
+    }
+
     if (hubstaff.connected && hubstaff.refreshToken && hubstaff.organizationId) {
       try {
         const result = await fetchHoursForPeriod(

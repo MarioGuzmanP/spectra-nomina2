@@ -63,7 +63,20 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   payroll: storage.get<PayrollSettings>(STORAGE_KEYS.PAYROLL_SETTINGS) ?? DEFAULT_PAYROLL_SETTINGS,
   fiscal: storage.get<FiscalParameters>(STORAGE_KEYS.FISCAL_PARAMETERS) ?? DEFAULT_FISCAL_PARAMETERS,
   bamboohr: storage.get<BambooHRConfig>(STORAGE_KEYS.BAMBOOHR_CONFIG) ?? defaultBambooHR,
-  hubstaff: storage.get<HubstaffConfig>(STORAGE_KEYS.HUBSTAFF_CONFIG) ?? defaultHubstaff,
+  hubstaff: (() => {
+    const raw = storage.get<Record<string, unknown>>(STORAGE_KEYS.HUBSTAFF_CONFIG)
+    if (!raw) return defaultHubstaff
+    // Migrate: field was renamed accessToken → refreshToken in commit ac715042.
+    // Old localStorage data has { accessToken: '...' } with no refreshToken key.
+    const needsMigration = !raw.refreshToken && !!raw.accessToken
+    const refreshToken =
+      (raw.refreshToken as string | undefined) ||
+      (raw.accessToken as string | undefined) ||
+      ''
+    const migrated = { ...defaultHubstaff, ...raw, refreshToken } as HubstaffConfig
+    if (needsMigration) storage.set(STORAGE_KEYS.HUBSTAFF_CONFIG, migrated)
+    return migrated
+  })(),
   email: storage.get<EmailConfig>(STORAGE_KEYS.EMAIL_CONFIG) ?? defaultEmail,
   emailTemplate: storage.get<EmailTemplate>(STORAGE_KEYS.EMAIL_TEMPLATE) ?? defaultEmailTemplate,
 
