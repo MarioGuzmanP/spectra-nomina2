@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useSettingsStore } from '@/store/settingsStore'
 import { useEmployeesStore } from '@/store/employeesStore'
 import { toast } from '@/hooks/useToast'
-import { fetchHoursForPeriod } from '@/lib/connectors/hubstaff'
+import { fetchHoursForPeriod, fetchUserProfiles } from '@/lib/connectors/hubstaff'
 import type { HubstaffActivityUser } from '@/lib/connectors/hubstaff'
 import { roundHalfUp } from '@/lib/payroll/calculations'
 import type { Employee, EmployeeHoursEntry } from '@/types'
@@ -139,14 +139,12 @@ export function StepPeriod({ onNext }: Props) {
         hoursMap = result.hoursMap
         hubUsers = result.users
 
-        // Diagnostic
-        console.log('[StepPeriod] BambooHR hourly employees:', activeEmployees.map((e) => ({
-          id: e.id, name: `${e.firstName} ${e.lastName}`, email: e.workEmail,
-        })))
-        console.log('[StepPeriod] Hubstaff users from activities:', hubUsers)
-        console.log('[StepPeriod] hoursMap user IDs:', Object.keys(hoursMap))
-
         const { tokenUpdate } = result
+        const postFetchState = {
+          refreshToken: tokenUpdate.newRefreshToken ?? hubstaff.refreshToken,
+          cachedAccessToken: tokenUpdate.newAccessToken ?? hubstaff.cachedAccessToken,
+          cachedAccessTokenExpiry: tokenUpdate.newAccessTokenExpiry ?? hubstaff.cachedAccessTokenExpiry,
+        }
         if (tokenUpdate.newRefreshToken || tokenUpdate.newAccessToken) {
           updateHubstaff({
             ...(tokenUpdate.newRefreshToken ? { refreshToken: tokenUpdate.newRefreshToken } : {}),
@@ -154,6 +152,22 @@ export function StepPeriod({ onNext }: Props) {
             ...(tokenUpdate.newAccessTokenExpiry ? { cachedAccessTokenExpiry: tokenUpdate.newAccessTokenExpiry } : {}),
           })
         }
+
+        // Activities endpoint doesn't embed user details — batch-fetch profiles
+        // for all user IDs that appeared in the period so we can match by email/name.
+        // Results are cached in localStorage for 24 h.
+        if (hubUsers.length === 0 && Object.keys(hoursMap).length > 0) {
+          const userIds = Object.keys(hoursMap).map(Number)
+          console.log(`[StepPeriod] activities users array empty — fetching ${userIds.length} profiles via /v2/users/{id}`)
+          const profiles = await fetchUserProfiles(userIds, postFetchState)
+          hubUsers = [...profiles.entries()].map(([id, p]) => ({ id, name: p.name, email: p.email }))
+          console.log(`[StepPeriod] profiles fetched: ${hubUsers.length}`, hubUsers.map(u => ({ id: u.id, name: u.name, email: u.email })))
+        }
+
+        console.log('[StepPeriod] BambooHR hourly employees:', activeEmployees.map((e) => ({
+          name: `${e.firstName} ${e.lastName}`, email: e.workEmail,
+        })))
+        console.log('[StepPeriod] hoursMap user IDs:', Object.keys(hoursMap).length, 'hubUsers for matching:', hubUsers.length)
       } catch (err) {
         const msg = err instanceof Error ? err.message : t('errors.fetchFailed')
         toast({ variant: 'destructive', title: 'Hubstaff fetch failed', description: msg + ' — proceeding with manual entry.' })

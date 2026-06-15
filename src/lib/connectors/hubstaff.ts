@@ -154,8 +154,81 @@ export async function fetchHubstaffMembers(
     }))
   }
 
+  // Report what include[]=users returned — helps diagnose whether the param is honoured
+  console.log(
+    '[hubstaff] /members response — members:', data.members?.length ?? 0,
+    '| root users key present:', !!data.users, '| root users count:', data.users?.length ?? 0,
+    '| first member keys:', JSON.stringify(Object.keys(data.members?.[0] ?? {})),
+  )
   console.log('[hubstaff] fetchHubstaffMembers → total:', members.length, 'hasNames:', members.some(m => !!m.name))
   return { members, tokenUpdate }
+}
+
+// ─── User profile cache ────────────────────────────────────────────────────────
+
+const PROFILE_CACHE_KEY = 'spectra_hs_profiles'
+const PROFILE_CACHE_TTL = 24 * 60 * 60 * 1000  // 24 h
+
+interface CachedProfile { id: number; name: string; email: string; at: number }
+
+function loadProfileCache(): Map<number, CachedProfile> {
+  try {
+    const raw = localStorage.getItem(PROFILE_CACHE_KEY)
+    if (!raw) return new Map()
+    const entries = JSON.parse(raw) as [number, CachedProfile][]
+    const now = Date.now()
+    return new Map(entries.filter(([, p]) => now - p.at < PROFILE_CACHE_TTL))
+  } catch { return new Map() }
+}
+
+function saveProfileCache(cache: Map<number, CachedProfile>): void {
+  try {
+    localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify([...cache.entries()]))
+  } catch { /* quota exceeded — operate without persisting */ }
+}
+
+/**
+ * Batch-fetches user profiles via GET /v2/users/{id}.
+ * Caches results in localStorage for 24 h so repeated payroll runs don't re-fetch.
+ * Call with a tokenState that has a valid cachedAccessToken to avoid re-exchanging
+ * the refresh token on every parallel request.
+ */
+export async function fetchUserProfiles(
+  userIds: number[],
+  tokenState: HubstaffTokenState,
+): Promise<Map<number, { name: string; email: string }>> {
+  if (userIds.length === 0) return new Map()
+
+  const cache = loadProfileCache()
+  const missing = userIds.filter((id) => !cache.has(id))
+
+  if (missing.length > 0) {
+    console.log(`[hubstaff] fetchUserProfiles — fetching ${missing.length} profiles (${userIds.length - missing.length} cached)`)
+    const BATCH = 10
+    for (let i = 0; i < missing.length; i += BATCH) {
+      const batch = missing.slice(i, i + BATCH)
+      await Promise.all(batch.map(async (id) => {
+        try {
+          const { res } = await fetchHubstaff(`users/${id}`, tokenState)
+          if (!res.ok) return
+          const data = await res.json() as { user?: { id?: number; name?: string; email?: string } }
+          if (data.user?.id) {
+            cache.set(id, { id, name: data.user.name ?? '', email: data.user.email ?? '', at: Date.now() })
+          }
+        } catch { /* skip — profile stays missing */ }
+      }))
+      // Brief pause between batches to avoid hammering the API
+      if (i + BATCH < missing.length) await new Promise<void>((r) => setTimeout(r, 300))
+    }
+    saveProfileCache(cache)
+    console.log(`[hubstaff] fetchUserProfiles — done, ${cache.size} profiles in cache`)
+  }
+
+  return new Map(
+    userIds
+      .filter((id) => cache.has(id))
+      .map((id) => [id, { name: cache.get(id)!.name, email: cache.get(id)!.email }]),
+  )
 }
 
 export interface EmployeeHoursMap {

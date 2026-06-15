@@ -12,7 +12,7 @@ import { Separator } from '@/components/ui/separator'
 import { useSettingsStore } from '@/store/settingsStore'
 import { useEmployeesStore } from '@/store/employeesStore'
 import { toast } from '@/hooks/useToast'
-import { testHubstaffToken, fetchHubstaffMembers } from '@/lib/connectors/hubstaff'
+import { testHubstaffToken, fetchHubstaffMembers, fetchUserProfiles } from '@/lib/connectors/hubstaff'
 import type { HubstaffOrganization } from '@/lib/connectors/hubstaff'
 import type { HubstaffMember } from '@/lib/connectors/types'
 import type { HubstaffMapping } from '@/types'
@@ -428,8 +428,13 @@ function HubstaffConnector() {
         cachedAccessToken: hubstaff.cachedAccessToken,
         cachedAccessTokenExpiry: hubstaff.cachedAccessTokenExpiry,
       })
-        .then(({ members: fetched, tokenUpdate }) => {
-          setMembers(fetched)
+        .then(async ({ members: fetched, tokenUpdate }) => {
+          // Save rotated tokens first so subsequent calls can use the fresh access token
+          const postMembersState = {
+            refreshToken: tokenUpdate.newRefreshToken ?? hubstaff.refreshToken,
+            cachedAccessToken: tokenUpdate.newAccessToken ?? hubstaff.cachedAccessToken,
+            cachedAccessTokenExpiry: tokenUpdate.newAccessTokenExpiry ?? hubstaff.cachedAccessTokenExpiry,
+          }
           if (tokenUpdate.newRefreshToken || tokenUpdate.newAccessToken) {
             updateHubstaff({
               ...(tokenUpdate.newRefreshToken ? { refreshToken: tokenUpdate.newRefreshToken } : {}),
@@ -437,6 +442,25 @@ function HubstaffConnector() {
               ...(tokenUpdate.newAccessTokenExpiry ? { cachedAccessTokenExpiry: tokenUpdate.newAccessTokenExpiry } : {}),
             })
           }
+
+          // If include[]=users didn't return names, batch-fetch via /v2/users/{id}
+          // so the mapping panel shows real names instead of "User #ID"
+          const noNames = !fetched.some((m) => !!m.name)
+          if (noNames && fetched.length > 0) {
+            console.log(`[connectors] no names from /members — fetching ${fetched.length} profiles via /v2/users/{id}`)
+            const memberIds = fetched.map((m) => m.id)
+            const profiles = await fetchUserProfiles(memberIds, postMembersState)
+            if (profiles.size > 0) {
+              const enriched = fetched.map((m) => {
+                const p = profiles.get(m.id)
+                return p ? { ...m, name: p.name, email: p.email } : m
+              })
+              setMembers(enriched)
+              console.log(`[connectors] enriched ${profiles.size} member(s) with profile data`)
+              return
+            }
+          }
+          setMembers(fetched)
         })
         .catch(() => setMembers([]))
         .finally(() => setLoadingMembers(false))
