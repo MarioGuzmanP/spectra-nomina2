@@ -58,9 +58,12 @@ export function SinglePaystubModal({ employee, hoursEntry, startDate, endDate, f
     [country, frequency, fiscal, payrollSettings],
   )
 
+  // Admin-entered rate (for "Not set" employees) takes precedence over BambooHR rate
+  const effectiveRate = hoursEntry.payRateOverride ?? employee.payRate
+
   const calculation = useMemo(() => calculatePayroll({
     employeeId: employee.id,
-    hourlyRate: employee.payRate,
+    hourlyRate: effectiveRate,
     regularHours: hoursEntry.regularHours,
     otHours: hoursEntry.otHours,
     holidayHours: hoursEntry.holidayHours,
@@ -70,7 +73,7 @@ export function SinglePaystubModal({ employee, hoursEntry, startDate, endDate, f
     otRatePercent: payrollSettings.otRatePercent,
     holidayRatePercent: payrollSettings.holidayRatePercent,
     periodStart: startDate,
-  }), [employee, hoursEntry, rules, payrollSettings, frequency, startDate])
+  }), [employee, effectiveRate, hoursEntry, rules, payrollSettings, frequency, startDate])
 
   const entry = useMemo(() => ({
     employee,
@@ -242,7 +245,7 @@ export function SinglePaystubModal({ employee, hoursEntry, startDate, endDate, f
               <tr>
                 <td className="px-4 py-2 text-gray-700">{t('payroll.soloPaystub.regularHours')}</td>
                 <td className="px-3 py-2 text-right text-gray-700">{hoursEntry.regularHours}</td>
-                <td className="px-3 py-2 text-right text-gray-500 text-xs">{formatCurrency(employee.payRate)}/hr</td>
+                <td className="px-3 py-2 text-right text-gray-500 text-xs">{formatCurrency(effectiveRate)}/hr</td>
                 <td className="px-4 py-2 text-right font-semibold">{formatCurrency(calculation.regularPay)}</td>
               </tr>
               {/* Night incentive - always shown (default 0) */}
@@ -256,14 +259,14 @@ export function SinglePaystubModal({ employee, hoursEntry, startDate, endDate, f
               <tr>
                 <td className="px-4 py-2 text-gray-700">{t('payroll.soloPaystub.holidayHours')}</td>
                 <td className="px-3 py-2 text-right text-gray-700">{hoursEntry.holidayHours}</td>
-                <td className="px-3 py-2 text-right text-gray-500 text-xs">{formatCurrency(employee.payRate)}/hr</td>
+                <td className="px-3 py-2 text-right text-gray-500 text-xs">{formatCurrency(effectiveRate)}/hr</td>
                 <td className="px-4 py-2 text-right font-semibold">{formatCurrency(calculation.holidayPay)}</td>
               </tr>
               {/* Overtime - always shown */}
               <tr>
                 <td className="px-4 py-2 text-gray-700">{t('payroll.soloPaystub.overtimeHours')}</td>
                 <td className="px-3 py-2 text-right text-gray-700">{hoursEntry.otHours}</td>
-                <td className="px-3 py-2 text-right text-gray-500 text-xs">{formatCurrency(employee.payRate)}/hr × {otMultiplier.toFixed(2)}</td>
+                <td className="px-3 py-2 text-right text-gray-500 text-xs">{formatCurrency(effectiveRate)}/hr × {otMultiplier.toFixed(2)}</td>
                 <td className="px-4 py-2 text-right font-semibold">{formatCurrency(calculation.otPay)}</td>
               </tr>
             </tbody>

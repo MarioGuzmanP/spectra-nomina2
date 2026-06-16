@@ -38,6 +38,8 @@ export interface EmployeeHoursEntry {
   holidayHours: number
   source: 'hubstaff' | 'manual'
   editedManually?: boolean
+  /** Admin-entered hourly rate, used when the employee's BambooHR pay rate is "Not set". */
+  payRateOverride?: number
 }
 
 export interface PayrollPeriod {

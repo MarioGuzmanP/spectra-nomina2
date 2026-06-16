@@ -44,24 +44,16 @@ export function StepCalculate({ employeeHours, startDate, endDate: _endDate, fre
   const isGenericCountry = !isDR && !isUS && rules.country !== 'Unknown' && rules.country !== ''
   const firstQuincena = isDR && frequency === 'biweekly' && isFirstQuincena(startDate)
 
-  const salariedSlipthrough = useMemo(() =>
-    employeeHours
-      .map((h) => employees.find((e) => e.id === h.employeeId))
-      .filter((e) => e && e.payType !== 'Hourly'),
-    [employeeHours, employees],
-  )
-
   const { entries, totals } = useMemo(() => {
     const computedEntries: PayrollEntry[] = []
 
     for (const h of employeeHours) {
       const emp = employees.find((e) => e.id === h.employeeId)
       if (!emp) continue
-      if (emp.payType !== 'Hourly') continue
 
       const calculation = calculatePayroll({
         employeeId: emp.id,
-        hourlyRate: emp.payRate,
+        hourlyRate: h.payRateOverride ?? emp.payRate,
         regularHours: h.regularHours,
         otHours: h.otHours,
         holidayHours: h.holidayHours,
@@ -90,23 +82,6 @@ export function StepCalculate({ employeeHours, startDate, endDate: _endDate, fre
 
     return { entries: computedEntries, totals }
   }, [employeeHours, employees, rules, frequency, payrollSettings, startDate])
-
-  if (salariedSlipthrough.length > 0) {
-    return (
-      <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-sm text-red-700 space-y-2">
-        <p className="font-semibold">{t('payroll.calculate.salariedError')}</p>
-        <ul className="list-disc pl-4 space-y-0.5">
-          {salariedSlipthrough.map((e) => e && (
-            <li key={e.id}>{e.firstName} {e.lastName}</li>
-          ))}
-        </ul>
-        <p className="text-xs text-red-500 pt-1">{t('payroll.calculate.salariedErrorNote')}</p>
-        <button type="button" onClick={onBack} className="mt-2 text-xs underline text-red-600">
-          {t('common.back')}
-        </button>
-      </div>
-    )
-  }
 
   const ActionButtons = () => (
     <div className="flex gap-3">

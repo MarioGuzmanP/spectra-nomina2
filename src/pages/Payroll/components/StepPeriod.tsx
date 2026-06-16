@@ -218,9 +218,6 @@ export function StepPeriod({ onNext }: Props) {
       return
     }
 
-    // Only hourly employees enter the hours review flow
-    const hourlyEmployees = activeEmployees.filter((e) => e.payType === 'Hourly')
-
     setLoading(true)
     let hoursMap: Record<string, { regular: number; ot: number; total: number }> = {}
     let hubUsers: HubstaffActivityUser[] = []
@@ -288,7 +285,7 @@ export function StepPeriod({ onNext }: Props) {
           console.log(`[StepPeriod] profiles fetched: ${hubUsers.length}`, hubUsers.map(u => ({ id: u.id, name: u.name, email: u.email })))
         }
 
-        console.log('[StepPeriod] BambooHR hourly employees:', hourlyEmployees.map((e) => ({
+        console.log('[StepPeriod] BambooHR active employees:', activeEmployees.map((e) => ({
           name: `${e.firstName} ${e.lastName}`, email: e.workEmail,
         })))
         console.log('[StepPeriod] hoursMap user IDs:', Object.keys(hoursMap).length, 'hubUsers for matching:', hubUsers.length)
@@ -298,7 +295,7 @@ export function StepPeriod({ onNext }: Props) {
       }
     }
 
-    const employeeHours: EmployeeHoursEntry[] = hourlyEmployees.map((emp) => {
+    const employeeHours: EmployeeHoursEntry[] = activeEmployees.map((emp) => {
       const savedMapping = hubstaff.employeeMapping.find((m) => m.bambooEmployeeId === emp.id)
       let hubstaffUserId: string | undefined = savedMapping?.hubstaffUserId || undefined
       let hubstaffData = hubstaffUserId ? hoursMap[hubstaffUserId] : undefined

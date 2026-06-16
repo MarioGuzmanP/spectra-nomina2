@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Clock, Pencil, CheckCircle2, AlertTriangle, MapPin, CalendarDays, ChevronDown, ChevronRight, Calculator } from 'lucide-react'
+import { Clock, Pencil, CheckCircle2, AlertTriangle, MapPin, CalendarDays, Calculator } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -58,17 +58,7 @@ export function StepHours({ employeeHours, startDate, endDate, frequency, countr
   const employees = useEmployeesStore((s) => s.employees)
   const [hours, setHours] = useState<EmployeeHoursEntry[]>(employeeHours)
   const [filter, setFilter] = useState<Filter>('all')
-  const [showSalaried, setShowSalaried] = useState(false)
   const [soloTarget, setSoloTarget] = useState<SoloTarget | null>(null)
-
-  const salariedEmployees = useMemo(
-    () => employees.filter((e) => {
-      if (e.status !== 'Active' || e.payType === 'Hourly') return false
-      const empCountry = e.country && e.country.trim() ? e.country.trim() : 'Unknown'
-      return empCountry === country
-    }),
-    [employees, country],
-  )
 
   const holidays = useMemo(
     () => getDRHolidaysInRange(startDate, endDate),
@@ -82,6 +72,15 @@ export function StepHours({ employeeHours, startDate, endDate, frequency, countr
         h.employeeId === employeeId
           ? { ...h, [field]: val, source: 'manual', editedManually: true }
           : h,
+      ),
+    )
+  }
+
+  const updatePayRate = (employeeId: string, raw: string) => {
+    const val = raw.trim() === '' ? undefined : roundHalfUp(parseFloat(raw) || 0, 2)
+    setHours((prev) =>
+      prev.map((h) =>
+        h.employeeId === employeeId ? { ...h, payRateOverride: val } : h,
       ),
     )
   }
@@ -156,13 +155,6 @@ export function StepHours({ employeeHours, startDate, endDate, frequency, countr
               </span>
             ))}
           </div>
-        </div>
-      )}
-
-      {/* No-hourly informational banner */}
-      {hours.length === 0 && salariedEmployees.length > 0 && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-700">
-          {t('payroll.noHourlyForCountry', { count: salariedEmployees.length })}
         </div>
       )}
 
@@ -303,10 +295,27 @@ export function StepHours({ employeeHours, startDate, endDate, frequency, countr
                           {total}
                         </td>
                         <td className="px-3 py-3 text-right text-gray-600 text-xs">
-                          {formatCurrency(emp.payRate)}
+                          {emp.payRateCurrency === '' ? (
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              placeholder={t('employees.payRateNotSet')}
+                              className="h-7 w-24 text-right text-xs ml-auto"
+                              value={h.payRateOverride ?? ''}
+                              onChange={(e) => updatePayRate(h.employeeId, e.target.value)}
+                            />
+                          ) : (
+                            formatCurrency(emp.payRate)
+                          )}
                         </td>
                         <td className="px-3 py-3">
-                          <MatchBadge entry={h} total={total} t={t} />
+                          <div className="flex items-center gap-1.5">
+                            <MatchBadge entry={h} total={total} t={t} />
+                            <Badge variant={emp.payType === 'Hourly' ? 'info' : 'secondary'} className="text-[10px]">
+                              {emp.payType}
+                            </Badge>
+                          </div>
                         </td>
                         <td className="px-3 py-3 text-center">
                           <button
@@ -327,41 +336,6 @@ export function StepHours({ employeeHours, startDate, endDate, frequency, countr
           </div>
         </CardContent>
       </Card>
-
-      {/* Salaried employees — excluded, shown collapsed */}
-      {salariedEmployees.length > 0 && (
-        <div className="rounded-xl border border-gray-200">
-          <button
-            type="button"
-            onClick={() => setShowSalaried((v) => !v)}
-            className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-gray-50 rounded-xl transition-colors"
-          >
-            <span className="text-sm font-medium text-gray-600">
-              {t('payroll.review.salariedSection')} ({salariedEmployees.length})
-            </span>
-            {showSalaried
-              ? <ChevronDown className="h-4 w-4 text-gray-400" />
-              : <ChevronRight className="h-4 w-4 text-gray-400" />}
-          </button>
-          {showSalaried && (
-            <div className="border-t border-gray-100 px-4 py-3 space-y-1">
-              <p className="text-xs text-gray-400 mb-2">{t('payroll.review.salariedNote')}</p>
-              {salariedEmployees.map((e) => (
-                <div key={e.id} className="flex items-center gap-2 py-1 opacity-60">
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-100 text-[10px] font-semibold text-gray-500">
-                    {getInitials(e.firstName, e.lastName)}
-                  </div>
-                  <span className="text-xs text-gray-600">{e.firstName} {e.lastName}</span>
-                  <span className="text-[10px] text-gray-400">— {e.jobTitle}</span>
-                  <Badge variant="secondary" className="ml-auto text-[10px]">
-                    {t('payroll.review.salary')}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Bottom action buttons */}
       <div className="flex gap-3">

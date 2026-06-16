@@ -213,6 +213,8 @@ export function PayStubDocument({
   holidayRatePercent = 100,
 }: Props) {
   const { employee: emp, calculation: c, hours: h } = entry
+  // Admin-entered rate (for "Not set" employees) takes precedence over BambooHR rate
+  const effectiveRate = h.payRateOverride ?? emp.payRate
   const l = L[lang]
   const today = new Date().toLocaleDateString(lang === 'es' ? 'es-DO' : 'en-US')
 
@@ -301,7 +303,7 @@ export function PayStubDocument({
           <View style={S.tRow}>
             <Text style={[S.earnCell, { flex: eD }]}>{l.regular}</Text>
             <Text style={[S.earnCell, { flex: eH, textAlign: 'right' }]}>{h.regularHours}</Text>
-            <Text style={[S.earnCell, { flex: eR, textAlign: 'right' }]}>{fmt(emp.payRate)}/hr</Text>
+            <Text style={[S.earnCell, { flex: eR, textAlign: 'right' }]}>{fmt(effectiveRate)}/hr</Text>
             <Text style={[S.earnCellBold, { flex: eA, textAlign: 'right' }]}>{fmt(c.regularPay)}</Text>
           </View>
 
@@ -317,7 +319,7 @@ export function PayStubDocument({
           <View style={S.tRow}>
             <Text style={[S.earnCell, { flex: eD }]}>{l.holiday}</Text>
             <Text style={[S.earnCell, { flex: eH, textAlign: 'right' }]}>{h.holidayHours}</Text>
-            <Text style={[S.earnCell, { flex: eR, textAlign: 'right' }]}>{fmt(emp.payRate)}/hr</Text>
+            <Text style={[S.earnCell, { flex: eR, textAlign: 'right' }]}>{fmt(effectiveRate)}/hr</Text>
             <Text style={[S.earnCellBold, { flex: eA, textAlign: 'right' }]}>{fmt(c.holidayPay)}</Text>
           </View>
 
@@ -325,7 +327,7 @@ export function PayStubDocument({
           <View style={S.tRow}>
             <Text style={[S.earnCell, { flex: eD }]}>{l.ot}</Text>
             <Text style={[S.earnCell, { flex: eH, textAlign: 'right' }]}>{h.otHours}</Text>
-            <Text style={[S.earnCell, { flex: eR, textAlign: 'right' }]}>{fmt(emp.payRate)}/hr × {otMultiplier}</Text>
+            <Text style={[S.earnCell, { flex: eR, textAlign: 'right' }]}>{fmt(effectiveRate)}/hr × {otMultiplier}</Text>
             <Text style={[S.earnCellBold, { flex: eA, textAlign: 'right' }]}>{fmt(c.otPay)}</Text>
           </View>
 
