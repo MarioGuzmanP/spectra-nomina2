@@ -52,7 +52,7 @@ const S = StyleSheet.create({
   tTotalRow: { flexDirection: 'row', padding: '5 8', borderTop: `1 solid ${GRAY_200}`, backgroundColor: GRAY_50 },
 
   // ── Earnings table ──────────────────────────────────────────────────────────
-  earnHead: { backgroundColor: EMERALD, borderRadius: '4 4 0 0' },
+  earnHead: { backgroundColor: EMERALD, borderTopLeftRadius: 4, borderTopRightRadius: 4 },
   earnHeadText: { fontSize: 8, fontFamily: 'Roboto', fontWeight: 700, color: '#FFFFFF' },
   earnCell: { fontSize: 8, color: GRAY_700 },
   earnCellBold: { fontSize: 8, fontFamily: 'Roboto', fontWeight: 700, color: GRAY_900 },
@@ -60,7 +60,7 @@ const S = StyleSheet.create({
   earnTotalValue: { fontSize: 9, fontFamily: 'Roboto', fontWeight: 700, color: EMERALD },
 
   // ── Deductions table ────────────────────────────────────────────────────────
-  dedHead: { backgroundColor: GRAY_700, borderRadius: '4 4 0 0' },
+  dedHead: { backgroundColor: GRAY_700, borderTopLeftRadius: 4, borderTopRightRadius: 4 },
   dedHeadText: { fontSize: 8, fontFamily: 'Roboto', fontWeight: 700, color: '#FFFFFF' },
   dedLabel: { fontSize: 8, color: GRAY_700 },
   dedRate: { fontSize: 8, color: GRAY_500 },
@@ -255,9 +255,9 @@ export function PayStubDocument({
             )}
             <View>
               <Text style={S.companyName}>{company.name}</Text>
-              {company.rnc && <Text style={S.companyMeta}>{l.rnc}: {company.rnc}</Text>}
-              {company.address && <Text style={S.companyMeta}>{company.address}</Text>}
-              {company.phone && <Text style={S.companyMeta}>{company.phone}</Text>}
+              {!!company.rnc && <Text style={S.companyMeta}>{l.rnc}: {company.rnc}</Text>}
+              {!!company.address && <Text style={S.companyMeta}>{company.address}</Text>}
+              {!!company.phone && <Text style={S.companyMeta}>{company.phone}</Text>}
             </View>
           </View>
           <View style={S.headerRight}>
@@ -278,10 +278,10 @@ export function PayStubDocument({
           <View style={{ flex: 1 }}>
             <Text style={S.empName}>{emp.firstName} {emp.lastName}</Text>
             <View style={{ flexDirection: 'row', gap: 14, flexWrap: 'wrap' }}>
-              {emp.jobTitle && (
+              {!!emp.jobTitle && (
                 <Text style={S.empMeta}>{l.position}: <Text style={S.empMetaValue}>{emp.jobTitle}</Text></Text>
               )}
-              {emp.department && (
+              {!!emp.department && (
                 <Text style={S.empMeta}>{l.dept}: <Text style={S.empMetaValue}>{emp.department}</Text></Text>
               )}
               <Text style={S.empMeta}>{l.empId}: <Text style={S.empMetaValue}>{emp.id}</Text></Text>

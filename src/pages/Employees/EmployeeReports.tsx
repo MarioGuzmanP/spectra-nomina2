@@ -3,7 +3,7 @@ import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { FileText, Download, Loader2 } from 'lucide-react'
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -105,6 +105,7 @@ export function EmployeeReports({ open, onClose, employees }: Props) {
             <FileText className="h-5 w-5 text-emerald-600" />
             {t('employees.reports.title')}
           </DialogTitle>
+          <DialogDescription className="sr-only">{t('employees.reports.subtitle')}</DialogDescription>
         </DialogHeader>
 
         <p className="text-sm text-gray-500">{t('employees.reports.subtitle')}</p>

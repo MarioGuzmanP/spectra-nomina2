@@ -50,7 +50,7 @@ const S = StyleSheet.create({
   summaryBreakValue: { fontSize: 7, fontFamily: 'Roboto', fontWeight: 700, color: RED },
 
   // ── Detail table ────────────────────────────────────────────────────────────
-  tHead: { flexDirection: 'row', backgroundColor: EMERALD, padding: '4 6', borderRadius: '3 3 0 0' },
+  tHead: { flexDirection: 'row', backgroundColor: EMERALD, padding: '4 6', borderTopLeftRadius: 3, borderTopRightRadius: 3 },
   tHeadText: { fontSize: 7, fontFamily: 'Roboto', fontWeight: 700, color: '#FFFFFF', textAlign: 'right' },
   tHeadLeft: { fontSize: 7, fontFamily: 'Roboto', fontWeight: 700, color: '#FFFFFF' },
   tRow: { flexDirection: 'row', padding: '3.5 6', borderBottom: `0.5 solid ${GRAY_100}` },
@@ -67,7 +67,7 @@ const S = StyleSheet.create({
   tTotalRed: { fontSize: 7.5, fontFamily: 'Roboto', fontWeight: 700, color: RED, textAlign: 'right' },
 
   // ── Dept table ──────────────────────────────────────────────────────────────
-  dHead: { flexDirection: 'row', backgroundColor: GRAY_700, padding: '4 6', borderRadius: '3 3 0 0' },
+  dHead: { flexDirection: 'row', backgroundColor: GRAY_700, padding: '4 6', borderTopLeftRadius: 3, borderTopRightRadius: 3 },
 
   // ── Footer ──────────────────────────────────────────────────────────────────
   footer: { marginTop: 20, paddingTop: 10, borderTop: `1 solid ${GRAY_200}` },
@@ -230,8 +230,8 @@ export function ManagerReportDocument({
             )}
             <View>
               <Text style={S.companyName}>{company.name}</Text>
-              {company.rnc && <Text style={S.companyMeta}>{l.rnc}: {company.rnc}</Text>}
-              {company.address && <Text style={S.companyMeta}>{company.address}</Text>}
+              {!!company.rnc && <Text style={S.companyMeta}>{l.rnc}: {company.rnc}</Text>}
+              {!!company.address && <Text style={S.companyMeta}>{company.address}</Text>}
             </View>
           </View>
           <View style={S.headerRight}>

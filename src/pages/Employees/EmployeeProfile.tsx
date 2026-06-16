@@ -14,6 +14,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog'
 import { useEmployeesStore } from '@/store/employeesStore'
@@ -306,6 +307,9 @@ export default function EmployeeProfile() {
             <DialogTitle>
               {editingId ? t('common.edit') : t('employees.deductions.addDeduction')}
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              {t('employees.deductions.addDeduction')}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">

@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Download, Mail, Loader2, X } from 'lucide-react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { useSettingsStore } from '@/store/settingsStore'
 import { usePayrollStore } from '@/store/payrollStore'
@@ -187,6 +187,9 @@ export function SinglePaystubModal({ employee, hoursEntry, startDate, endDate, f
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="pr-6">{t('payroll.soloPaystub.title')}</DialogTitle>
+          <DialogDescription className="sr-only">
+            {employee.firstName} {employee.lastName} — {startDate} – {endDate}
+          </DialogDescription>
         </DialogHeader>
 
         {/* Paystub preview */}
