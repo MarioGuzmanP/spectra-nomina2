@@ -80,6 +80,10 @@ export function SinglePaystubModal({ employee, hoursEntry, startDate, endDate, f
   // "Salary for the month applicable to ISR" = gross pay for the period
   const isrSalaryDisplay = calculation.grossPay
 
+  // Quincena ISR flags
+  const isrDeferred = Math.max(0, calculation.isrCalculated - calculation.isrPeriod)
+  const isrFromPrev = Math.max(0, calculation.isrPeriod - calculation.isrCalculated)
+
   async function buildElement() {
     const { PayStubDocument } = await import('@/lib/pdf/payStubPdf')
     return React.createElement(PayStubDocument, {
@@ -276,7 +280,33 @@ export function SinglePaystubModal({ employee, hoursEntry, startDate, endDate, f
               <DedRow label={t('payroll.soloPaystub.afp')} rate="2.87%" amount={calculation.afpAmount} />
               <DedRow label={t('payroll.soloPaystub.payAdvance')} amount={payAdvanceAmt} />
               <DedRow label={t('payroll.soloPaystub.dependentTSS')} amount={dependentTSSAmt} />
-              <DedRow label={t('payroll.soloPaystub.isr')} amount={calculation.isrPeriod} />
+              {isrDeferred > 0 ? (
+                // 1st quincena: show 0 + informational note
+                <>
+                  <DedRow label={t('payroll.soloPaystub.isr')} amount={0} />
+                  <tr className="bg-amber-50">
+                    <td colSpan={3} className="px-4 py-1.5 text-amber-700 text-xs italic">
+                      {t('payroll.soloPaystub.isrDeferred')}: {formatCurrency(isrDeferred)}
+                    </td>
+                    <td />
+                  </tr>
+                </>
+              ) : isrFromPrev > 0 ? (
+                // 2nd quincena: breakdown
+                <>
+                  <DedRow label={t('payroll.soloPaystub.isr1stQuincena')} amount={isrFromPrev} />
+                  <DedRow label={t('payroll.soloPaystub.isr2ndQuincena')} amount={calculation.isrCalculated} />
+                  <tr className="bg-red-50">
+                    <td className="px-4 py-2 text-red-700 font-bold text-xs">{t('payroll.soloPaystub.isrTotalRetained')}</td>
+                    <td className="px-3 py-2" />
+                    <td className="w-6 py-2 text-center text-red-400 text-xs">►</td>
+                    <td className="px-4 py-2 text-right text-red-700 font-bold">{formatCurrency(calculation.isrPeriod)}</td>
+                  </tr>
+                </>
+              ) : (
+                // Weekly / no quincena: single row
+                <DedRow label={t('payroll.soloPaystub.isr')} amount={calculation.isrPeriod} />
+              )}
               {/* ISR salary reference — shown in neutral color, not red */}
               <tr className="bg-gray-50">
                 <td className="px-4 py-2 text-gray-500 text-xs">{t('payroll.soloPaystub.isrSalary')}</td>

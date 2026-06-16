@@ -253,7 +253,9 @@
       "otPay": "OT Pay",
       "holidayPay": "Holiday Pay",
       "salariedError": "Cannot calculate — the following employees are salaried and cannot be processed in hourly payroll:",
-      "salariedErrorNote": "Go back and remove salaried employees from the hours list."
+      "salariedErrorNote": "Go back and remove salaried employees from the hours list.",
+      "quincena1Notice": "1st Fortnight — ISR is calculated but NOT retained this period. It will be charged together with the 2nd fortnight ISR.",
+      "quincena2Notice": "2nd Fortnight — ISR for both fortnights (1st + 2nd) will be retained in this period."
     },
     "approve": {
       "title": "Approve Payroll",
@@ -305,6 +307,10 @@
       "dependentTSS": "Dependent TSS Retention",
       "complementaryIns": "Complementary Insurance Dependent",
       "isr": "Tax Retention ISR (DGII)",
+      "isrDeferred": "ISR calculated — charged in 2nd fortnight",
+      "isr1stQuincena": "ISR 1st Fortnight",
+      "isr2ndQuincena": "ISR 2nd Fortnight",
+      "isrTotalRetained": "Total ISR Retained",
       "isrSalary": "Salary for the month applicable to ISR",
       "totalDeductions": "Total Deductions",
       "netIncome": "NET INCOME",

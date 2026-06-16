@@ -253,7 +253,9 @@
       "otPay": "Pago horas extra",
       "holidayPay": "Pago días feriados",
       "salariedError": "No se puede calcular — los siguientes empleados son asalariados y no pueden procesarse en nómina por hora:",
-      "salariedErrorNote": "Regresa y elimina los empleados asalariados de la lista de horas."
+      "salariedErrorNote": "Regresa y elimina los empleados asalariados de la lista de horas.",
+      "quincena1Notice": "1ra Quincena — El ISR se calcula pero NO se retiene en este período. Se cobrará junto al ISR de la 2da quincena.",
+      "quincena2Notice": "2da Quincena — Se retendrá el ISR de ambas quincenas (1ra + 2da) en este período."
     },
     "approve": {
       "title": "Aprobar Nómina",
@@ -305,6 +307,10 @@
       "dependentTSS": "Retención TSS Dependiente",
       "complementaryIns": "Seguro Complementario Dependiente",
       "isr": "Retención ISR (DGII)",
+      "isrDeferred": "ISR calculado — se cobra en 2da quincena",
+      "isr1stQuincena": "ISR 1ra Quincena",
+      "isr2ndQuincena": "ISR 2da Quincena",
+      "isrTotalRetained": "Total ISR Retenido",
       "isrSalary": "Salario del mes aplicable a ISR",
       "totalDeductions": "Total Deducciones",
       "netIncome": "SALARIO NETO",

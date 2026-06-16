@@ -137,6 +137,10 @@ const L = {
     payAdvance: 'Pay Advance Deduction',
     dependentTSS: 'Dependent TSS retention',
     isr: 'Tax Retention ISR (DGII)',
+    isrDeferred: 'ISR calculated — charged in 2nd fortnight',
+    isr1st: 'ISR 1st Fortnight',
+    isr2nd: 'ISR 2nd Fortnight',
+    isrTotalRetained: 'Total ISR Retained',
     isrSalary: 'Salary for the month applicable to ISR',
     complementaryIns: 'Complementary Insurance Dependent',
     totalDed: 'Total Deductions',
@@ -167,6 +171,10 @@ const L = {
     payAdvance: 'Adelanto de sueldo',
     dependentTSS: 'Retención TSS dependiente',
     isr: 'Retención ISR (DGII)',
+    isrDeferred: 'ISR calculado — se cobra en 2da quincena',
+    isr1st: 'ISR 1ra Quincena',
+    isr2nd: 'ISR 2da Quincena',
+    isrTotalRetained: 'Total ISR Retenido',
     isrSalary: 'Salario del mes aplicable a ISR',
     complementaryIns: 'Seguro complementario dependiente',
     totalDed: 'Total deducciones',
@@ -199,6 +207,10 @@ export function PayStubDocument({
 
   // "Salary for the month applicable to ISR" = gross pay for the period
   const isrSalaryDisplay = c.grossPay
+
+  // Quincena ISR flags
+  const isrDeferred  = roundHalfUp(Math.max(0, c.isrCalculated - c.isrPeriod))  // > 0 on 1st quincena
+  const isrFromPrev  = roundHalfUp(Math.max(0, c.isrPeriod - c.isrCalculated))  // > 0 on 2nd quincena
 
   // Column flex widths — earnings: [desc 5, hours 1.5, rate 2.5, amount 2]
   const eD = 5, eH = 1.5, eR = 2.5, eA = 2
@@ -344,13 +356,54 @@ export function PayStubDocument({
             <Text style={[S.dedAmount, { flex: dA, textAlign: 'right' }]}>{fmt(dependentTSSAmt)}</Text>
           </View>
 
-          {/* ISR (always shown) */}
-          <View style={S.tRow}>
-            <Text style={[S.dedLabel, { flex: dD }]}>{l.isr}</Text>
-            <Text style={[S.dedRate, { flex: dR }]}> </Text>
-            <Text style={[S.dedArrow, { flex: dArr, textAlign: 'center' }]}>►</Text>
-            <Text style={[S.dedAmount, { flex: dA, textAlign: 'right' }]}>{fmt(c.isrPeriod)}</Text>
-          </View>
+          {/* ISR — quincena-aware display */}
+          {isrDeferred > 0 ? (
+            // 1st quincena: ISR calculated but not retained; show 0 + informational note
+            <>
+              <View style={S.tRow}>
+                <Text style={[S.dedLabel, { flex: dD }]}>{l.isr}</Text>
+                <Text style={[S.dedRate, { flex: dR }]}> </Text>
+                <Text style={[S.dedArrow, { flex: dArr, textAlign: 'center' }]}>►</Text>
+                <Text style={[S.dedAmount, { flex: dA, textAlign: 'right' }]}>{fmt(0)}</Text>
+              </View>
+              <View style={[S.tRow, { backgroundColor: '#FFFBEB' }]}>
+                <Text style={[S.dedLabel, { flex: dD + dR + dArr, color: '#92400E', fontSize: 7.5, fontStyle: 'italic' }]}>
+                  {l.isrDeferred}: {fmt(isrDeferred)}
+                </Text>
+                <Text style={[{ flex: dA }]}> </Text>
+              </View>
+            </>
+          ) : isrFromPrev > 0 ? (
+            // 2nd quincena: show 1st + 2nd breakdown
+            <>
+              <View style={S.tRow}>
+                <Text style={[S.dedLabel, { flex: dD }]}>{l.isr1st}</Text>
+                <Text style={[S.dedRate, { flex: dR }]}> </Text>
+                <Text style={[S.dedArrow, { flex: dArr, textAlign: 'center' }]}>►</Text>
+                <Text style={[S.dedAmount, { flex: dA, textAlign: 'right' }]}>{fmt(isrFromPrev)}</Text>
+              </View>
+              <View style={S.tRow}>
+                <Text style={[S.dedLabel, { flex: dD }]}>{l.isr2nd}</Text>
+                <Text style={[S.dedRate, { flex: dR }]}> </Text>
+                <Text style={[S.dedArrow, { flex: dArr, textAlign: 'center' }]}>►</Text>
+                <Text style={[S.dedAmount, { flex: dA, textAlign: 'right' }]}>{fmt(c.isrCalculated)}</Text>
+              </View>
+              <View style={[S.tRow, { backgroundColor: '#FEF2F2' }]}>
+                <Text style={[S.dedLabel, { flex: dD, fontFamily: 'Helvetica-Bold', color: RED }]}>{l.isrTotalRetained}</Text>
+                <Text style={[S.dedRate, { flex: dR }]}> </Text>
+                <Text style={[S.dedArrow, { flex: dArr, textAlign: 'center' }]}>►</Text>
+                <Text style={[S.dedAmount, { flex: dA, textAlign: 'right', fontSize: 9 }]}>{fmt(c.isrPeriod)}</Text>
+              </View>
+            </>
+          ) : (
+            // Weekly or same-period: single ISR row
+            <View style={S.tRow}>
+              <Text style={[S.dedLabel, { flex: dD }]}>{l.isr}</Text>
+              <Text style={[S.dedRate, { flex: dR }]}> </Text>
+              <Text style={[S.dedArrow, { flex: dArr, textAlign: 'center' }]}>►</Text>
+              <Text style={[S.dedAmount, { flex: dA, textAlign: 'right' }]}>{fmt(c.isrPeriod)}</Text>
+            </View>
+          )}
 
           {/* Salary for the month applicable to ISR */}
           <View style={[S.tRow, { backgroundColor: GRAY_50 }]}>

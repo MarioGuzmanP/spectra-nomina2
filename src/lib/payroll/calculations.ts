@@ -97,19 +97,17 @@ export function calculateAnnualISR(annualTaxable: number, brackets: ISRBracket[]
 
 /**
  * Calculate ISR for a pay period.
- * Method: annualize the period gross → calculate annual ISR → pro-rate to period.
- *
- * For biweekly: periods per year = 24 (or 26 for weekly).
- * Strictly: annualized = grossPay × periodsPerYear.
- * Period ISR = annual ISR / periodsPerYear.
+ * Annualizes the period GROSS (before TSS) per DGII practice: gross × periodsPerYear.
+ * Biweekly: 24 periods/year. Weekly: 52 periods/year.
+ * Period ISR = annual ISR ÷ periodsPerYear.
  */
 function calculateISR(
-  grossAfterTSS: number,
+  grossPay: number,
   frequency: 'biweekly' | 'weekly',
   brackets: ISRBracket[],
 ): { taxableIncome: number; isrMonthly: number; isrPeriod: number } {
   const periodsPerYear = frequency === 'biweekly' ? 24 : 52
-  const annualTaxable = roundHalfUp(grossAfterTSS * periodsPerYear)
+  const annualTaxable = roundHalfUp(grossPay * periodsPerYear)
   const annualISR = calculateAnnualISR(annualTaxable, brackets)
   const isrPeriod = roundHalfUp(annualISR / periodsPerYear)
   const isrMonthly = roundHalfUp(annualISR / 12)
@@ -144,10 +142,15 @@ function calculateCustomDeductions(
 /**
  * Main payroll calculation function.
  * Pure function — no side effects, no UI dependencies.
+ *
+ * DR biweekly quincena ISR rule:
+ *   1st quincena (startDay=1): calculate ISR but retain RD$0 (defer to 2nd).
+ *   2nd quincena (startDay=16): retain this period's ISR + 1st quincena's ISR.
+ *   Weekly: always retain ISR each period normally.
  */
 export function calculatePayroll(input: CalculationInput): CalculationResult {
   const { hourlyRate, regularHours, otHours, holidayHours } = input
-  const { fiscal, payroll, frequency } = input
+  const { fiscal, payroll, frequency, quincena } = input
 
   if (hourlyRate <= 0 || (regularHours + otHours + holidayHours) === 0) {
     return {
@@ -162,6 +165,7 @@ export function calculatePayroll(input: CalculationInput): CalculationResult {
       tssTotal: 0,
       taxableIncome: 0,
       isrMonthly: 0,
+      isrCalculated: 0,
       isrPeriod: 0,
       customDeductionsBreakdown: [],
       customDeductions: 0,
@@ -194,13 +198,31 @@ export function calculatePayroll(input: CalculationInput): CalculationResult {
   )
 
   const tssTotal = roundHalfUp(afp.afpAmount + sfs.sfsAmount)
-  const grossAfterTSS = roundHalfUp(earnings.grossPay - tssTotal)
 
-  const isr = calculateISR(grossAfterTSS, frequency, fiscal.isrBrackets)
+  // ISR is annualized from gross (before TSS) per DGII practice: gross × 24
+  const isr = calculateISR(earnings.grossPay, frequency, fiscal.isrBrackets)
+  const isrCalculated = isr.isrPeriod
+
+  // Quincena ISR logic (biweekly DR payroll):
+  //   1st quincena → retain 0 (defer to 2nd)
+  //   2nd quincena → retain isrCalculated + previousQuincenaIsr
+  //                  (fallback: assume prev = current if not provided)
+  //   weekly / null → retain normally
+  let isrRetained: number
+  if (quincena === 1) {
+    isrRetained = 0
+  } else if (quincena === 2) {
+    const prevIsr = input.previousQuincenaIsr !== undefined
+      ? input.previousQuincenaIsr
+      : isrCalculated  // fallback: assume both quincenas same gross
+    isrRetained = roundHalfUp(isrCalculated + prevIsr)
+  } else {
+    isrRetained = isrCalculated
+  }
 
   const customDeds = calculateCustomDeductions(earnings.grossPay, input.customDeductions)
 
-  const totalDeductions = roundHalfUp(tssTotal + isr.isrPeriod + customDeds.total)
+  const totalDeductions = roundHalfUp(tssTotal + isrRetained + customDeds.total)
   const netPay = roundHalfUp(earnings.grossPay - totalDeductions)
 
   return {
@@ -215,7 +237,8 @@ export function calculatePayroll(input: CalculationInput): CalculationResult {
     tssTotal,
     taxableIncome: isr.taxableIncome,
     isrMonthly: isr.isrMonthly,
-    isrPeriod: isr.isrPeriod,
+    isrCalculated,
+    isrPeriod: isrRetained,
     customDeductionsBreakdown: customDeds.breakdown,
     customDeductions: customDeds.total,
     totalDeductions,

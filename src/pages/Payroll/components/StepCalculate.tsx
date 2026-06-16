@@ -5,23 +5,58 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useEmployeesStore } from '@/store/employeesStore'
 import { useSettingsStore } from '@/store/settingsStore'
+import { usePayrollStore } from '@/store/payrollStore'
 import { calculatePayroll } from '@/lib/payroll/calculations'
 import { formatCurrency, getInitials } from '@/lib/utils'
-import type { EmployeeHoursEntry, PayrollEntry, PayrollTotals } from '@/types'
 import { roundHalfUp } from '@/lib/payroll/calculations'
+import type { EmployeeHoursEntry, PayrollEntry, PayrollTotals, PayrollPeriod } from '@/types'
 
 interface Props {
   employeeHours: EmployeeHoursEntry[]
+  startDate: string
+  endDate: string
   frequency: 'biweekly' | 'weekly'
   onNext: (entries: PayrollEntry[], totals: PayrollTotals) => void
   onBack: () => void
 }
 
-export function StepCalculate({ employeeHours, frequency, onNext, onBack }: Props) {
+// Detect DR biweekly quincena from start date day.
+function detectQuincena(startDate: string): 1 | 2 | null {
+  const day = new Date(startDate + 'T00:00:00').getDate()
+  if (day === 1) return 1
+  if (day === 16) return 2
+  return null
+}
+
+// Look up the ISR that was calculated (but deferred) in the 1st quincena for this employee.
+// Returns undefined if no 1st-quincena payroll found (caller uses current ISR as fallback).
+function findPrevQuincenaIsr(
+  employeeId: string,
+  secondQuincenaStartDate: string,
+  history: PayrollPeriod[],
+): number | undefined {
+  const refDate = new Date(secondQuincenaStartDate + 'T00:00:00')
+  const targetMonth = refDate.getMonth()
+  const targetYear = refDate.getFullYear()
+
+  const prevPeriod = history.find((p) => {
+    const d = new Date(p.startDate + 'T00:00:00')
+    return d.getDate() === 1 && d.getMonth() === targetMonth && d.getFullYear() === targetYear
+  })
+  if (!prevPeriod) return undefined
+
+  const prevEntry = prevPeriod.entries.find((e) => e.employee.id === employeeId)
+  return prevEntry?.calculation.isrCalculated
+}
+
+export function StepCalculate({ employeeHours, startDate, endDate: _endDate, frequency, onNext, onBack }: Props) {
   const { t } = useTranslation()
   const employees = useEmployeesStore((s) => s.employees)
   const fiscal = useSettingsStore((s) => s.fiscal)
   const payrollSettings = useSettingsStore((s) => s.payroll)
+  const history = usePayrollStore((s) => s.history)
+
+  const quincena = frequency === 'biweekly' ? detectQuincena(startDate) : null
 
   const salariedSlipthrough = useMemo(() =>
     employeeHours
@@ -36,7 +71,12 @@ export function StepCalculate({ employeeHours, frequency, onNext, onBack }: Prop
     for (const h of employeeHours) {
       const emp = employees.find((e) => e.id === h.employeeId)
       if (!emp) continue
-      if (emp.payType !== 'Hourly') continue  // defensive — should never reach here
+      if (emp.payType !== 'Hourly') continue
+
+      // For 2nd quincena: look up deferred ISR from 1st quincena payroll
+      const previousQuincenaIsr = quincena === 2
+        ? findPrevQuincenaIsr(emp.id, startDate, history)
+        : undefined
 
       const calculation = calculatePayroll({
         employeeId: emp.id,
@@ -48,6 +88,8 @@ export function StepCalculate({ employeeHours, frequency, onNext, onBack }: Prop
         fiscal,
         payroll: payrollSettings,
         frequency,
+        quincena,
+        previousQuincenaIsr,
       })
 
       computedEntries.push({ employee: emp, hours: h, calculation })
@@ -66,7 +108,7 @@ export function StepCalculate({ employeeHours, frequency, onNext, onBack }: Prop
     }
 
     return { entries: computedEntries, totals }
-  }, [employeeHours, employees, fiscal, payrollSettings, frequency])
+  }, [employeeHours, employees, fiscal, payrollSettings, frequency, quincena, startDate, history])
 
   if (salariedSlipthrough.length > 0) {
     return (
@@ -87,6 +129,18 @@ export function StepCalculate({ employeeHours, frequency, onNext, onBack }: Prop
 
   return (
     <div className="space-y-4">
+      {/* Quincena ISR notice */}
+      {quincena === 1 && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-700">
+          {t('payroll.calculate.quincena1Notice')}
+        </div>
+      )}
+      {quincena === 2 && (
+        <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-xs text-blue-700">
+          {t('payroll.calculate.quincena2Notice')}
+        </div>
+      )}
+
       {/* Summary cards */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <SummaryCard label={t('payroll.calculate.grossPay')} value={formatCurrency(totals.totalGross)} color="text-gray-900" />
@@ -148,7 +202,12 @@ export function StepCalculate({ employeeHours, frequency, onNext, onBack }: Prop
                     <td className="px-4 py-3 text-right text-gray-900">{formatCurrency(c.grossPay)}</td>
                     <td className="px-4 py-3 text-right text-orange-600">{formatCurrency(c.afpAmount)}</td>
                     <td className="px-4 py-3 text-right text-orange-600">{formatCurrency(c.sfsAmount)}</td>
-                    <td className="px-4 py-3 text-right text-red-600">{formatCurrency(c.isrPeriod)}</td>
+                    <td className="px-4 py-3 text-right text-red-600">
+                      {quincena === 1
+                        ? <span className="text-gray-400 italic">{formatCurrency(0)}</span>
+                        : formatCurrency(c.isrPeriod)
+                      }
+                    </td>
                     <td className="px-4 py-3 text-right text-gray-600">{formatCurrency(c.customDeductions)}</td>
                     <td className="px-4 py-3 text-right font-bold text-emerald-700 bg-emerald-50">
                       {formatCurrency(c.netPay)}

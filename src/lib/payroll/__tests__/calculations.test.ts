@@ -26,41 +26,35 @@ function makeInput(overrides: Partial<CalculationInput> = {}): CalculationInput 
   }
 }
 
-// ─── Test 1: Employee below ISR threshold → ISR = 0 ─────────────────────────
+// ─── Test 1: ISR Calculation (annualized from gross × 24) ─────────────────────
 describe('ISR Calculation', () => {
   it('employee below RD$416,220/year → ISR = 0', () => {
-    // Annual taxable needs to be < 416,220
-    // biweekly: annualized = grossAfterTSS × 24
-    // grossAfterTSS × 24 < 416,220 → grossAfterTSS < 17,342.50/period
-    // hourlyRate=100, 80hrs, gross=8000, TSS≈ 472.8, grossAfterTSS≈7527.2, annual≈180,652 → exento
+    // ISR annualized from GROSS × 24 (not grossAfterTSS)
+    // hourlyRate=100, 80hrs → gross=8,000 → annual=192,000 < 416,220 → exempt
     const input = makeInput({ hourlyRate: 100, regularHours: 80 })
     const result = calculatePayroll(input)
     expect(result.isrPeriod).toBe(0)
-    expect(result.isrMonthly).toBe(0)
+    expect(result.isrCalculated).toBe(0)
   })
 
   it('employee in bracket 2 (15%) pays correct ISR', () => {
-    // Annual taxable in bracket 2: 416,220.01 – 624,329
-    // Need grossAfterTSS/period × 24 ≈ 500,000
-    // grossAfterTSS/period ≈ 20,833
-    // gross ≈ 20,833 / (1 - 0.0287 - 0.0304) ≈ 20,833 / 0.9409 ≈ 22,141
-    // hourlyRate=277, 80hrs → gross=22,160
-    const input = makeInput({ hourlyRate: 277, regularHours: 80 })
+    // gross × 24 must fall in bracket 2: 416,220.01 – 624,329
+    // hourlyRate=220, 80hrs → gross=17,600 → annual=422,400 (bracket 2)
+    const input = makeInput({ hourlyRate: 220, regularHours: 80 })
     const result = calculatePayroll(input)
-    const annualTaxable = result.taxableIncome
+    const annualTaxable = result.taxableIncome  // gross × 24
     expect(annualTaxable).toBeGreaterThan(416220)
     expect(annualTaxable).toBeLessThanOrEqual(624329)
     const expectedAnnualISR = roundHalfUp((annualTaxable - 416220.01) * 0.15)
     const expectedPeriodISR = roundHalfUp(expectedAnnualISR / 24)
     expect(result.isrPeriod).toBe(expectedPeriodISR)
+    expect(result.isrCalculated).toBe(expectedPeriodISR)
   })
 
   it('employee in bracket 3 (RD$31,216 + 20%) pays correct ISR', () => {
-    // Annual taxable in bracket 3: 624,329.01 – 867,123
-    // grossAfterTSS/period × 24 ≈ 750,000 → per period ≈ 31,250
-    // gross ≈ 31,250 / 0.9409 ≈ 33,213
-    // hourlyRate=415, 80hrs → gross=33,200
-    const input = makeInput({ hourlyRate: 415, regularHours: 80 })
+    // gross × 24 in bracket 3: 624,329.01 – 867,123
+    // hourlyRate=350, 80hrs → gross=28,000 → annual=672,000 (bracket 3)
+    const input = makeInput({ hourlyRate: 350, regularHours: 80 })
     const result = calculatePayroll(input)
     const annualTaxable = result.taxableIncome
     expect(annualTaxable).toBeGreaterThan(624329)
@@ -68,12 +62,23 @@ describe('ISR Calculation', () => {
     const expectedAnnualISR = roundHalfUp(31216 + (annualTaxable - 624329.01) * 0.20)
     const expectedPeriodISR = roundHalfUp(expectedAnnualISR / 24)
     expect(result.isrPeriod).toBe(expectedPeriodISR)
+    expect(result.isrCalculated).toBe(expectedPeriodISR)
+  })
+
+  it('Idaly Peña test case: gross=28,000 → ISR=1,697.93/quincena', () => {
+    // User-specified test: 28,000 × 24 = 672,000
+    // ISR = 31,216 + (672,000 - 624,329.01) × 20% = 40,750.20
+    // Per quincena = 40,750.20 / 24 = 1,697.925 → 1,697.93
+    const input = makeInput({ hourlyRate: 350, regularHours: 80 })
+    const result = calculatePayroll(input)
+    expect(result.grossPay).toBe(28000)
+    expect(result.taxableIncome).toBe(672000)
+    expect(result.isrCalculated).toBe(1697.93)
   })
 
   it('employee in bracket 4 (RD$79,776 + 25%) pays correct ISR', () => {
-    // Annual taxable > 867,123
-    // hourlyRate=700, 80hrs → gross=56,000
-    // grossAfterTSS ≈ 56,000 × 0.9409 ≈ 52,690 → annual ≈ 1,264,560
+    // gross × 24 > 867,123
+    // hourlyRate=700, 80hrs → gross=56,000 → annual=1,344,000
     const input = makeInput({ hourlyRate: 700, regularHours: 80 })
     const result = calculatePayroll(input)
     const annualTaxable = result.taxableIncome
@@ -81,33 +86,88 @@ describe('ISR Calculation', () => {
     const expectedAnnualISR = roundHalfUp(79776 + (annualTaxable - 867123.01) * 0.25)
     const expectedPeriodISR = roundHalfUp(expectedAnnualISR / 24)
     expect(result.isrPeriod).toBe(expectedPeriodISR)
+    expect(result.isrCalculated).toBe(expectedPeriodISR)
   })
 })
 
-// ─── Test 2: TSS caps ─────────────────────────────────────────────────────────
+// ─── Test 2: Quincena ISR rule ────────────────────────────────────────────────
+describe('Quincena ISR Rule (DR biweekly)', () => {
+  it('1st quincena: ISR calculated but isrPeriod = 0 (deferred)', () => {
+    // gross=28,000 → ISR calculated = 1,697.93 but NOT retained
+    const input = makeInput({ hourlyRate: 350, regularHours: 80, quincena: 1 })
+    const result = calculatePayroll(input)
+    expect(result.isrCalculated).toBe(1697.93)
+    expect(result.isrPeriod).toBe(0)           // not retained
+    // Net does NOT include ISR deduction
+    const expectedNet = roundHalfUp(result.grossPay - result.tssTotal - result.customDeductions)
+    expect(result.netPay).toBe(expectedNet)
+  })
+
+  it('2nd quincena: ISR_1ra + ISR_2da both retained, previousQuincenaIsr provided', () => {
+    // Both quincenas: gross=28,000 → isrCalculated=1,697.93 each
+    // 2nd quincena total ISR = 1,697.93 + 1,697.93 = 3,395.86
+    const input = makeInput({
+      hourlyRate: 350,
+      regularHours: 80,
+      quincena: 2,
+      previousQuincenaIsr: 1697.93,
+    })
+    const result = calculatePayroll(input)
+    expect(result.isrCalculated).toBe(1697.93)
+    expect(result.isrPeriod).toBe(roundHalfUp(1697.93 + 1697.93))  // 3,395.86
+    const expectedNet = roundHalfUp(result.grossPay - result.tssTotal - result.isrPeriod - result.customDeductions)
+    expect(result.netPay).toBe(expectedNet)
+  })
+
+  it('2nd quincena: fallback to 2× current ISR when previousQuincenaIsr not provided', () => {
+    const input = makeInput({
+      hourlyRate: 350,
+      regularHours: 80,
+      quincena: 2,
+      // previousQuincenaIsr: undefined → falls back to isrCalculated
+    })
+    const result = calculatePayroll(input)
+    expect(result.isrPeriod).toBe(roundHalfUp(result.isrCalculated * 2))
+  })
+
+  it('weekly payroll: ISR retained normally every period (quincena rule does not apply)', () => {
+    const input = makeInput({
+      hourlyRate: 350,
+      regularHours: 80,
+      frequency: 'weekly',
+      quincena: null,
+    })
+    const result = calculatePayroll(input)
+    // Weekly: 350 × 80 = 28,000 gross; annual = 28,000 × 52 = 1,456,000 > 867,123 (bracket 4)
+    expect(result.isrPeriod).toBe(result.isrCalculated)
+    expect(result.isrPeriod).toBeGreaterThan(0)
+  })
+
+  it('no quincena specified: ISR retained normally (backward compat)', () => {
+    const input = makeInput({ hourlyRate: 350, regularHours: 80 })
+    const result = calculatePayroll(input)
+    expect(result.isrPeriod).toBe(result.isrCalculated)
+  })
+})
+
+// ─── Test 3: TSS caps ─────────────────────────────────────────────────────────
 describe('TSS Caps', () => {
   it('AFP cap: gross above 20× minCotizableSalary → AFP base capped', () => {
     const afpCap = baseFiscal.minCotizableSalary * baseFiscal.afpCapMultiplier
-    // salary above cap
     const input = makeInput({ hourlyRate: 3000, regularHours: 80 })
     const result = calculatePayroll(input)
-    // gross = 240,000; afpCap = 16,341.60 × 20 = 326,832 → above cap
-    // Since 240,000 < 326,832, let's use a higher rate
     expect(result.afpBase).toBeLessThanOrEqual(afpCap)
   })
 
   it('AFP cap: gross exactly at cap → afpBase = cap', () => {
     const afpCap = roundHalfUp(baseFiscal.minCotizableSalary * baseFiscal.afpCapMultiplier)
-    // gross = cap exactly: 326,832 / 80hrs = 4085.4/hr
     const input = makeInput({ hourlyRate: 4085.4, regularHours: 80 })
     const result = calculatePayroll(input)
-    // gross = 326,832 = cap, so afpBase = cap
     expect(result.afpBase).toBeLessThanOrEqual(afpCap)
   })
 
   it('SFS cap: gross above 10× minCotizableSalary → SFS base capped', () => {
     const sfsCap = roundHalfUp(baseFiscal.minCotizableSalary * baseFiscal.sfsCapMultiplier)
-    // SFS cap = 163,416 → gross = 200,000 (hourlyRate=2500, 80hrs)
     const input = makeInput({ hourlyRate: 2500, regularHours: 80 })
     const result = calculatePayroll(input)
     expect(result.sfsBase).toBeLessThanOrEqual(sfsCap)
@@ -116,10 +176,9 @@ describe('TSS Caps', () => {
   })
 })
 
-// ─── Test 3: OT calculation ───────────────────────────────────────────────────
+// ─── Test 4: OT calculation ───────────────────────────────────────────────────
 describe('Overtime Calculation', () => {
   it('50 hrs/week, threshold 44, OT 35%: 44 regular + 6 at 1.35×', () => {
-    // Using splitOTHours
     const { regularHours, otHours } = splitOTHours(50, 44)
     expect(regularHours).toBe(44)
     expect(otHours).toBe(6)
@@ -140,7 +199,7 @@ describe('Overtime Calculation', () => {
   })
 })
 
-// ─── Test 4: Holiday hours ────────────────────────────────────────────────────
+// ─── Test 5: Holiday hours ────────────────────────────────────────────────────
 describe('Holiday Calculation', () => {
   it('holiday hours at 100% extra → rate = 2.0×', () => {
     const hourlyRate = 400
@@ -159,7 +218,7 @@ describe('Holiday Calculation', () => {
   })
 })
 
-// ─── Test 5: Custom deductions ────────────────────────────────────────────────
+// ─── Test 6: Custom deductions ────────────────────────────────────────────────
 describe('Custom Deductions', () => {
   it('fixed + percentage deductions combined', () => {
     const hourlyRate = 300
@@ -195,7 +254,7 @@ describe('Custom Deductions', () => {
   })
 })
 
-// ─── Test 6: Zero hours employee ─────────────────────────────────────────────
+// ─── Test 7: Edge Cases ───────────────────────────────────────────────────────
 describe('Edge Cases', () => {
   it('employee with 0 hours → payroll = 0, no crash', () => {
     const input = makeInput({ regularHours: 0, otHours: 0, holidayHours: 0 })
@@ -204,6 +263,7 @@ describe('Edge Cases', () => {
     expect(result.netPay).toBe(0)
     expect(result.totalDeductions).toBe(0)
     expect(result.isrPeriod).toBe(0)
+    expect(result.isrCalculated).toBe(0)
     expect(result.afpAmount).toBe(0)
     expect(result.sfsAmount).toBe(0)
   })
@@ -215,8 +275,7 @@ describe('Edge Cases', () => {
     expect(result.netPay).toBe(0)
   })
 
-  it('net pay is never negative (deductions capped at gross)', () => {
-    // With very small gross and large custom deduction
+  it('net pay calculation is numerically valid (no NaN)', () => {
     const input = makeInput({
       hourlyRate: 50,
       regularHours: 1,
@@ -225,14 +284,12 @@ describe('Edge Cases', () => {
       ],
     })
     const result = calculatePayroll(input)
-    // Net can be negative if deductions exceed gross (this is valid — loan repayments can exceed pay)
-    // Just verify no crash and values are numbers
     expect(typeof result.netPay).toBe('number')
     expect(isNaN(result.netPay)).toBe(false)
   })
 })
 
-// ─── Test 7: Rounding ─────────────────────────────────────────────────────────
+// ─── Test 8: Rounding ─────────────────────────────────────────────────────────
 describe('Rounding', () => {
   it('roundHalfUp rounds 2.5 to 3, 2.45 to 2.45, 1.005 to 1.01', () => {
     expect(roundHalfUp(2.5, 0)).toBe(3)
@@ -255,11 +312,12 @@ describe('Rounding', () => {
     checkDecimals(result.afpAmount)
     checkDecimals(result.sfsAmount)
     checkDecimals(result.isrPeriod)
+    checkDecimals(result.isrCalculated)
     checkDecimals(result.netPay)
   })
 })
 
-// ─── Test 8: calculateAnnualISR directly ─────────────────────────────────────
+// ─── Test 9: calculateAnnualISR directly ─────────────────────────────────────
 describe('calculateAnnualISR', () => {
   it('amount = 0 → ISR = 0', () => {
     expect(calculateAnnualISR(0, baseFiscal.isrBrackets)).toBe(0)
@@ -272,6 +330,12 @@ describe('calculateAnnualISR', () => {
   it('amount = 520,000 → 15% of (520,000 - 416,220.01)', () => {
     const expected = roundHalfUp((520000 - 416220.01) * 0.15)
     expect(calculateAnnualISR(520000, baseFiscal.isrBrackets)).toBe(expected)
+  })
+
+  it('amount = 672,000 → bracket 3: 31,216 + 20% of excess (Idaly Peña annual)', () => {
+    const expected = roundHalfUp(31216 + (672000 - 624329.01) * 0.20)
+    expect(calculateAnnualISR(672000, baseFiscal.isrBrackets)).toBe(expected)
+    expect(expected).toBe(40750.20)
   })
 
   it('amount = 900,000 → bracket 4: 79,776 + 25% of excess', () => {

@@ -69,6 +69,8 @@ export default function Payroll() {
       {step === 2 && periodData && (
         <StepCalculate
           employeeHours={reviewedHours}
+          startDate={periodData.startDate}
+          endDate={periodData.endDate}
           frequency={periodData.frequency}
           onNext={(entries, totals) => {
             setCalculatedData({ entries, totals })

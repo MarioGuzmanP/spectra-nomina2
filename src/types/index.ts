@@ -68,7 +68,8 @@ export interface PayrollCalculation {
   tssTotal: number
   taxableIncome: number
   isrMonthly: number
-  isrPeriod: number
+  isrCalculated: number  // ISR for this period (before quincena override)
+  isrPeriod: number      // ISR actually retained (0 for 1st quincena)
   customDeductions: number
   customDeductionsBreakdown: Array<{ name: string; amount: number }>
   totalDeductions: number
