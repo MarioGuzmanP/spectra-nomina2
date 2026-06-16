@@ -43,6 +43,7 @@ export default function Employees() {
   const [search, setSearch] = useState('')
   const [deptFilter, setDeptFilter] = useState('all')
   const [titleFilter, setTitleFilter] = useState('all')
+  const [payTypeFilter, setPayTypeFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState<string>(
     () => localStorage.getItem('spectra_employees_status_filter') ?? 'Active',
   )
@@ -65,6 +66,7 @@ export default function Employees() {
   const activeFilterCount = [
     deptFilter !== 'all',
     titleFilter !== 'all',
+    payTypeFilter !== 'all',
     statusFilter !== 'Active',   // 'Active' is the default, not a filter override
     !!search,
   ].filter(Boolean).length
@@ -73,6 +75,7 @@ export default function Employees() {
     setSearch('')
     setDeptFilter('all')
     setTitleFilter('all')
+    setPayTypeFilter('all')
     const defaultStatus = 'Active'
     setStatusFilter(defaultStatus)
     localStorage.setItem('spectra_employees_status_filter', defaultStatus)
@@ -96,6 +99,7 @@ export default function Employees() {
         if (q && !normalize(`${e.firstName} ${e.lastName} ${e.workEmail}`).includes(q)) return false
         if (deptFilter !== 'all' && e.department !== deptFilter) return false
         if (titleFilter !== 'all' && e.jobTitle !== titleFilter) return false
+        if (payTypeFilter !== 'all' && e.payType !== payTypeFilter) return false
         if (statusFilter === 'Active' && e.status !== 'Active') return false
         if (statusFilter === 'not-active' && e.status === 'Active') return false
         return true
@@ -108,7 +112,7 @@ export default function Employees() {
         if (sortCol === 'hireDate') cmp = (a.hireDate || '').localeCompare(b.hireDate || '')
         return sortDir === 'asc' ? cmp : -cmp
       })
-  }, [employees, search, deptFilter, titleFilter, statusFilter, sortCol, sortDir])
+  }, [employees, search, deptFilter, titleFilter, payTypeFilter, statusFilter, sortCol, sortDir])
 
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
@@ -201,6 +205,18 @@ export default function Employees() {
               <SelectContent>
                 <SelectItem value="all">{t('employees.filters.allTitles')}</SelectItem>
                 {titles.map((t2) => <SelectItem key={t2} value={t2}>{t2}</SelectItem>)}
+              </SelectContent>
+            </Select>
+
+            {/* Pay Type filter */}
+            <Select value={payTypeFilter} onValueChange={handleFilterChange(setPayTypeFilter)}>
+              <SelectTrigger className="w-36">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('employees.filters.allPayTypes')}</SelectItem>
+                <SelectItem value="Hourly">{t('employees.filters.hourly')}</SelectItem>
+                <SelectItem value="Salary">{t('employees.filters.salary')}</SelectItem>
               </SelectContent>
             </Select>
 
