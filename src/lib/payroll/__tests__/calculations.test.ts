@@ -92,42 +92,31 @@ describe('ISR Calculation', () => {
 
 // ─── Test 2: Quincena ISR rule ────────────────────────────────────────────────
 describe('Quincena ISR Rule (DR biweekly)', () => {
-  it('1st quincena: ISR calculated but isrPeriod = 0 (deferred)', () => {
-    // gross=28,000 → ISR calculated = 1,697.93 but NOT retained
-    const input = makeInput({ hourlyRate: 350, regularHours: 80, quincena: 1 })
+  it('1st quincena (day 1-15): ISR calculated but isrPeriod = 0 (deferred)', () => {
+    // periodStart day=1 → 1st quincena → ISR not retained
+    const input = makeInput({ hourlyRate: 350, regularHours: 80, periodStart: '2026-03-01' })
     const result = calculatePayroll(input)
     expect(result.isrCalculated).toBe(1697.93)
-    expect(result.isrPeriod).toBe(0)           // not retained
-    // Net does NOT include ISR deduction
+    expect(result.isrPeriod).toBe(0)
     const expectedNet = roundHalfUp(result.grossPay - result.tssTotal - result.customDeductions)
     expect(result.netPay).toBe(expectedNet)
   })
 
-  it('2nd quincena: ISR_1ra + ISR_2da both retained, previousQuincenaIsr provided', () => {
-    // Both quincenas: gross=28,000 → isrCalculated=1,697.93 each
-    // 2nd quincena total ISR = 1,697.93 + 1,697.93 = 3,395.86
-    const input = makeInput({
-      hourlyRate: 350,
-      regularHours: 80,
-      quincena: 2,
-      previousQuincenaIsr: 1697.93,
-    })
+  it('1st quincena (day 10): ISR still = 0 (any day 1-15)', () => {
+    const input = makeInput({ hourlyRate: 350, regularHours: 80, periodStart: '2026-03-10' })
     const result = calculatePayroll(input)
-    expect(result.isrCalculated).toBe(1697.93)
-    expect(result.isrPeriod).toBe(roundHalfUp(1697.93 + 1697.93))  // 3,395.86
-    const expectedNet = roundHalfUp(result.grossPay - result.tssTotal - result.isrPeriod - result.customDeductions)
-    expect(result.netPay).toBe(expectedNet)
+    expect(result.isrPeriod).toBe(0)
+    expect(result.isrCalculated).toBeGreaterThan(0)
   })
 
-  it('2nd quincena: fallback to 2× current ISR when previousQuincenaIsr not provided', () => {
-    const input = makeInput({
-      hourlyRate: 350,
-      regularHours: 80,
-      quincena: 2,
-      // previousQuincenaIsr: undefined → falls back to isrCalculated
-    })
+  it('2nd quincena (day 16-31): ISR retained = isrCalculated × 2', () => {
+    // periodStart day=16 → 2nd quincena → retain 2× (covers both halves)
+    const input = makeInput({ hourlyRate: 350, regularHours: 80, periodStart: '2026-03-16' })
     const result = calculatePayroll(input)
-    expect(result.isrPeriod).toBe(roundHalfUp(result.isrCalculated * 2))
+    expect(result.isrCalculated).toBe(1697.93)
+    expect(result.isrPeriod).toBe(roundHalfUp(1697.93 * 2))  // 3,395.86
+    const expectedNet = roundHalfUp(result.grossPay - result.tssTotal - result.isrPeriod - result.customDeductions)
+    expect(result.netPay).toBe(expectedNet)
   })
 
   it('weekly payroll: ISR retained normally every period (quincena rule does not apply)', () => {
@@ -135,15 +124,14 @@ describe('Quincena ISR Rule (DR biweekly)', () => {
       hourlyRate: 350,
       regularHours: 80,
       frequency: 'weekly',
-      quincena: null,
+      periodStart: '2026-03-01',  // day=1 but weekly → no quincena rule
     })
     const result = calculatePayroll(input)
-    // Weekly: 350 × 80 = 28,000 gross; annual = 28,000 × 52 = 1,456,000 > 867,123 (bracket 4)
     expect(result.isrPeriod).toBe(result.isrCalculated)
     expect(result.isrPeriod).toBeGreaterThan(0)
   })
 
-  it('no quincena specified: ISR retained normally (backward compat)', () => {
+  it('no periodStart: ISR retained normally (backward compat)', () => {
     const input = makeInput({ hourlyRate: 350, regularHours: 80 })
     const result = calculatePayroll(input)
     expect(result.isrPeriod).toBe(result.isrCalculated)

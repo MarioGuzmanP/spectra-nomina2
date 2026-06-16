@@ -10,11 +10,10 @@ export interface CalculationInput {
   fiscal: FiscalParameters
   payroll: PayrollSettings
   frequency: 'biweekly' | 'weekly'
-  // DR biweekly rule: ISR deferred on 1st quincena, doubled on 2nd
-  quincena?: 1 | 2 | null
-  // ISR calculated (but deferred) from the 1st quincena — added to 2nd quincena retained amount
-  // If undefined when quincena===2, falls back to current period's ISR (assumes same gross)
-  previousQuincenaIsr?: number
+  // Period start date (YYYY-MM-DD). Used to auto-detect DR biweekly quincena rule:
+  //   day 1-15  → 1st quincena: ISR calculated but retained = 0
+  //   day 16-31 → 2nd quincena: ISR retained = isrCalculated × 2
+  periodStart?: string
 }
 
 export interface CalculationResult {

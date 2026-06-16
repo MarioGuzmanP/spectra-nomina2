@@ -61,7 +61,8 @@ export function SinglePaystubModal({ employee, hoursEntry, startDate, endDate, f
     fiscal,
     payroll: payrollSettings,
     frequency,
-  }), [employee, hoursEntry, fiscal, payrollSettings, frequency])
+    periodStart: startDate,
+  }), [employee, hoursEntry, fiscal, payrollSettings, frequency, startDate])
 
   const entry = useMemo(() => ({
     employee,

@@ -145,12 +145,19 @@ function calculateCustomDeductions(
  *
  * DR biweekly quincena ISR rule:
  *   1st quincena (startDay=1): calculate ISR but retain RD$0 (defer to 2nd).
- *   2nd quincena (startDay=16): retain this period's ISR + 1st quincena's ISR.
- *   Weekly: always retain ISR each period normally.
+ *   2nd quincena (startDay 16-31): retain isrCalculated × 2 (approximation for both halves).
+ *   Weekly / no periodStart: retain ISR every period normally.
  */
 export function calculatePayroll(input: CalculationInput): CalculationResult {
   const { hourlyRate, regularHours, otHours, holidayHours } = input
-  const { fiscal, payroll, frequency, quincena } = input
+  const { fiscal, payroll, frequency } = input
+
+  // Detect quincena from period start date (biweekly DR rule)
+  let quincena: 1 | 2 | null = null
+  if (frequency === 'biweekly' && input.periodStart) {
+    const day = new Date(input.periodStart + 'T00:00:00').getDate()
+    quincena = day <= 15 ? 1 : 2
+  }
 
   if (hourlyRate <= 0 || (regularHours + otHours + holidayHours) === 0) {
     return {
@@ -203,19 +210,15 @@ export function calculatePayroll(input: CalculationInput): CalculationResult {
   const isr = calculateISR(earnings.grossPay, frequency, fiscal.isrBrackets)
   const isrCalculated = isr.isrPeriod
 
-  // Quincena ISR logic (biweekly DR payroll):
-  //   1st quincena → retain 0 (defer to 2nd)
-  //   2nd quincena → retain isrCalculated + previousQuincenaIsr
-  //                  (fallback: assume prev = current if not provided)
-  //   weekly / null → retain normally
+  // DR biweekly quincena ISR rule:
+  //   1st quincena (day 1-15)  → retain 0, isrCalculated stored as pending
+  //   2nd quincena (day 16-31) → retain isrCalculated × 2 (covers both halves)
+  //   weekly / no periodStart  → retain normally
   let isrRetained: number
   if (quincena === 1) {
     isrRetained = 0
   } else if (quincena === 2) {
-    const prevIsr = input.previousQuincenaIsr !== undefined
-      ? input.previousQuincenaIsr
-      : isrCalculated  // fallback: assume both quincenas same gross
-    isrRetained = roundHalfUp(isrCalculated + prevIsr)
+    isrRetained = roundHalfUp(isrCalculated * 2)
   } else {
     isrRetained = isrCalculated
   }
