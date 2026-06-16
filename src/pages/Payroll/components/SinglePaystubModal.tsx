@@ -120,8 +120,10 @@ export function SinglePaystubModal({ employee, hoursEntry, startDate, endDate, f
       const blob = await generatePdfBlob(element)
       const fname = `Paystub_${employee.firstName}_${employee.lastName}_${startDate}_${endDate}.pdf`
       downloadBlob(blob, fname)
-    } catch {
-      toast({ variant: 'destructive', title: t('errors.pdfFailed') })
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      console.error('[Paystub] download failed:', err)
+      toast({ variant: 'destructive', title: t('errors.pdfFailed'), description: msg })
     } finally {
       setDownloading(false)
     }

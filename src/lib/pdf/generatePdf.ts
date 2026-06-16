@@ -3,19 +3,23 @@ import type { ReactElement } from 'react'
 let fontsRegistered = false
 
 /**
- * Registers an embedded Unicode font (Roboto, bundled in /public/fonts) so the PDF
- * renders the full Latin set — accents/ñ (e.g. "Idaly Peña"), accented company names,
- * and currency symbols like ₱ and ₡ — which the built-in Helvetica (WinAnsi) cannot.
- * Served same-origin, so it works offline with no external CDN dependency.
+ * Registers an embedded Unicode font (Roboto) so the PDF renders the full Latin set —
+ * accents/ñ (e.g. "Idaly Peña"), accented company names, and currency symbols like ₱/₡ —
+ * which the built-in Helvetica (WinAnsi) cannot encode.
+ *
+ * The font bytes are inlined as base64 data URIs (see robotoFont.ts) instead of fetched
+ * from /fonts/*.ttf, so PDF generation has NO runtime asset dependency. A missing/blocked
+ * font file used to make the whole render throw ("Failed to generate PDF").
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function registerFonts(Font: any) {
+async function registerFonts(Font: any): Promise<void> {
   if (fontsRegistered) return
+  const { ROBOTO_REGULAR, ROBOTO_BOLD } = await import('./robotoFont')
   Font.register({
     family: 'Roboto',
     fonts: [
-      { src: '/fonts/Roboto-Regular.ttf', fontWeight: 'normal' },
-      { src: '/fonts/Roboto-Bold.ttf', fontWeight: 'bold' },
+      { src: ROBOTO_REGULAR, fontWeight: 'normal' },
+      { src: ROBOTO_BOLD, fontWeight: 'bold' },
     ],
   })
   // Keep words intact (no automatic hyphenation of names/amounts).
@@ -29,17 +33,18 @@ function registerFonts(Font: any) {
  */
 async function getPdfRenderer() {
   const { pdf, Font } = await import('@react-pdf/renderer')
-  registerFonts(Font)
+  await registerFonts(Font)
   return { pdf }
 }
 
 export async function generatePdfBlob(element: ReactElement): Promise<Blob> {
-  const { pdf } = await getPdfRenderer()
   try {
+    const { pdf } = await getPdfRenderer()
     return await pdf(element).toBlob()
   } catch (err) {
+    // Surface the real exception (font load, image decode, etc.) instead of hiding it.
     console.error('[PDF] generatePdfBlob failed:', err)
-    throw err
+    throw err instanceof Error ? err : new Error(String(err))
   }
 }
 
