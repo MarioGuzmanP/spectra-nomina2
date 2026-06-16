@@ -127,8 +127,20 @@ export function StepCalculate({ employeeHours, startDate, endDate: _endDate, fre
     )
   }
 
+  const ActionButtons = () => (
+    <div className="flex gap-3">
+      <Button variant="outline" onClick={onBack}>{t('common.back')}</Button>
+      <Button onClick={() => onNext(entries, totals)}>
+        {t('payroll.approve.approve')}
+      </Button>
+    </div>
+  )
+
   return (
     <div className="space-y-4">
+      {/* Top action buttons */}
+      <ActionButtons />
+
       {/* Quincena ISR notice */}
       {quincena === 1 && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-700">
@@ -233,12 +245,8 @@ export function StepCalculate({ employeeHours, startDate, endDate: _endDate, fre
         </CardContent>
       </Card>
 
-      <div className="flex gap-3">
-        <Button variant="outline" onClick={onBack}>{t('common.back')}</Button>
-        <Button onClick={() => onNext(entries, totals)}>
-          {t('payroll.approve.approve')}
-        </Button>
-      </div>
+      {/* Bottom action buttons */}
+      <ActionButtons />
     </div>
   )
 }

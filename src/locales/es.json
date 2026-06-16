@@ -199,7 +199,9 @@
       "selectYear": "Año",
       "quincena1": "1ra Quincena (1–15)",
       "quincena2": "2da Quincena (16–fin de mes)",
-      "selectedPeriod": "Período seleccionado"
+      "selectedPeriod": "Período seleccionado",
+      "useCustomDates": "Usar fechas personalizadas",
+      "useQuincenaPicker": "Usar selector quincenal"
     },
     "review": {
       "title": "Revisar Horas",

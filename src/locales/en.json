@@ -199,7 +199,9 @@
       "selectYear": "Year",
       "quincena1": "1st Fortnight (1–15)",
       "quincena2": "2nd Fortnight (16–end of month)",
-      "selectedPeriod": "Selected Period"
+      "selectedPeriod": "Selected Period",
+      "useCustomDates": "Use custom dates",
+      "useQuincenaPicker": "Use quincena picker"
     },
     "review": {
       "title": "Review Hours",

@@ -99,9 +99,29 @@ export function StepPeriod({ onNext }: Props) {
   const [weeklyStart, setWeeklyStart] = useState(defaultWeeklyStart)
   const [weeklyEnd, setWeeklyEnd] = useState(defaultWeeklyEnd)
 
+  // ── Custom dates toggle (biweekly only) ───────────────────────────────────
+  // When true, shows free date pickers even in biweekly mode
+  const [useCustomDates, setUseCustomDates] = useState(false)
+  // Custom date inputs mirror bwDates when first opened
+  const [customStart, setCustomStart] = useState(bwDates.start)
+  const [customEnd, setCustomEnd] = useState(bwDates.end)
+
+  const handleToggleCustomDates = () => {
+    if (!useCustomDates) {
+      // Pre-fill custom inputs with the current quincena dates
+      setCustomStart(bwDates.start)
+      setCustomEnd(bwDates.end)
+    }
+    setUseCustomDates((v) => !v)
+  }
+
   // ── Effective dates passed to fetch ───────────────────────────────────────
-  const effectiveStart = frequency === 'biweekly' ? bwDates.start : weeklyStart
-  const effectiveEnd   = frequency === 'biweekly' ? bwDates.end   : weeklyEnd
+  const effectiveStart = frequency === 'biweekly'
+    ? (useCustomDates ? customStart : bwDates.start)
+    : weeklyStart
+  const effectiveEnd = frequency === 'biweekly'
+    ? (useCustomDates ? customEnd : bwDates.end)
+    : weeklyEnd
 
   // ── Month name list (locale-aware) ────────────────────────────────────────
   const monthNames = useMemo(() =>
@@ -347,20 +367,53 @@ export function StepPeriod({ onNext }: Props) {
               </div>
             </div>
 
-            {/* Computed period display */}
-            <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-              <CalendarDays className="h-4 w-4 text-emerald-600 shrink-0" />
-              <div className="min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600 mb-0.5">
-                  {t('payroll.period.selectedPeriod')}
-                </p>
-                <div className="flex items-center gap-2 text-sm font-semibold text-emerald-900">
-                  <span>{bwDates.start}</span>
-                  <ChevronRight className="h-3.5 w-3.5 text-emerald-500" />
-                  <span>{bwDates.end}</span>
+            {/* Computed period display — hidden when custom dates active */}
+            {!useCustomDates && (
+              <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                <CalendarDays className="h-4 w-4 text-emerald-600 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600 mb-0.5">
+                    {t('payroll.period.selectedPeriod')}
+                  </p>
+                  <div className="flex items-center gap-2 text-sm font-semibold text-emerald-900">
+                    <span>{bwDates.start}</span>
+                    <ChevronRight className="h-3.5 w-3.5 text-emerald-500" />
+                    <span>{bwDates.end}</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
+
+            {/* Custom date inputs */}
+            {useCustomDates && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>{t('payroll.period.startDate')}</Label>
+                  <Input
+                    type="date"
+                    value={customStart}
+                    onChange={(e) => setCustomStart(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>{t('payroll.period.endDate')}</Label>
+                  <Input
+                    type="date"
+                    value={customEnd}
+                    onChange={(e) => setCustomEnd(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Toggle link */}
+            <button
+              type="button"
+              onClick={handleToggleCustomDates}
+              className="text-xs text-gray-400 hover:text-emerald-600 underline underline-offset-2 transition-colors self-start"
+            >
+              {useCustomDates ? t('payroll.period.useQuincenaPicker') : t('payroll.period.useCustomDates')}
+            </button>
           </div>
         ) : (
           /* Weekly: free date inputs */
