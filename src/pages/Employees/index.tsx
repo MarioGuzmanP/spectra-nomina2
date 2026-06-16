@@ -302,15 +302,21 @@ export default function Employees() {
                             <span className="text-xs font-medium text-amber-600">{t('employees.payRateNotSet')}</span>
                           ) : (
                             <span className="font-medium text-gray-900">
-                              {formatPayRate(emp.payRate, emp.payRateCurrency)}/hr
+                              {formatPayRate(emp.payRate, emp.payRateCurrency)}
+                              {emp.payType === 'Hourly' ? '/hr' : ''}
                             </span>
                           )}
                         </td>
                         <td className="px-6 py-4 text-gray-500">{formatDate(emp.hireDate)}</td>
                         <td className="px-6 py-4">
-                          <Badge variant={statusVariant(emp.status)}>
-                            {t(`employees.status.${emp.status.toLowerCase()}`)}
-                          </Badge>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <Badge variant={statusVariant(emp.status)}>
+                              {t(`employees.status.${emp.status.toLowerCase()}`)}
+                            </Badge>
+                            <Badge variant={emp.payType === 'Hourly' ? 'info' : 'secondary'} className="text-[10px]">
+                              {emp.payType}
+                            </Badge>
+                          </div>
                         </td>
                         <td className="px-6 py-4">
                           <Button variant="ghost" size="sm" asChild>

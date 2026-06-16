@@ -6,7 +6,8 @@ interface BambooReportEmployee {
   lastName?: string
   workEmail?: string
   payRate?: string
-  payType?: string
+  payType?: string  // "Hourly" | "Salary" | "Hourly Non-Exempt" | ...
+  payPer?: string   // "Hour" | "Year" | "Month" | ... (fallback when payType absent)
   hireDate?: string
   employmentHistoryStatus?: string
   jobTitle?: string
@@ -15,6 +16,26 @@ interface BambooReportEmployee {
 
 interface BambooReportResponse {
   employees: BambooReportEmployee[]
+}
+
+/**
+ * Maps BambooHR payType / payPer fields to 'Hourly' | 'Salary'.
+ * payType values: "Hourly", "Hourly Non-Exempt", "Salary", "Salaried" …
+ * payPer values:  "Hour", "Week", "Biweek", "Month", "Year" …
+ */
+function mapPayType(
+  payType: string | null | undefined,
+  payPer: string | null | undefined,
+): Employee['payType'] {
+  const pt = (payType ?? '').trim().toLowerCase()
+  if (pt.startsWith('hourly')) return 'Hourly'
+  if (pt === 'salary' || pt === 'salaried') return 'Salary'
+
+  // Fallback: use payPer when payType is empty / not recognised
+  const pp = (payPer ?? '').trim().toLowerCase()
+  if (pp === 'hour') return 'Hourly'
+
+  return 'Salary'   // conservative default
 }
 
 /**
@@ -62,6 +83,7 @@ export async function fetchBambooDirectory(
         'workEmail',
         'payRate',
         'payType',
+        'payPer',
         'hireDate',
         'employmentHistoryStatus',
         'jobTitle',
@@ -76,7 +98,17 @@ export async function fetchBambooDirectory(
   }
 
   const data = await res.json() as BambooReportResponse
-  return (data.employees ?? []).map((e): Employee => {
+
+  console.log('[bamboo] payType sample (first 5):',
+    (data.employees ?? []).slice(0, 5).map((e) => ({
+      name: `${e.firstName ?? ''} ${e.lastName ?? ''}`.trim(),
+      payType: e.payType,
+      payPer: e.payPer,
+      payRate: e.payRate,
+    })),
+  )
+
+  const employees = (data.employees ?? []).map((e): Employee => {
     const { rate, currency } = parsePayRate(e.payRate)
     return {
       id: String(e.id),
@@ -85,7 +117,7 @@ export async function fetchBambooDirectory(
       workEmail: e.workEmail ?? '',
       payRate: rate,
       payRateCurrency: currency,
-      payType: e.payType === 'Hourly' ? 'Hourly' : 'Salary',
+      payType: mapPayType(e.payType, e.payPer),
       jobTitle: e.jobTitle ?? '',
       department: e.department ?? '',
       hireDate: e.hireDate ?? '',
@@ -93,4 +125,13 @@ export async function fetchBambooDirectory(
       customDeductions: [],
     }
   })
+
+  console.log('[bamboo] payType distribution:',
+    employees.reduce<Record<string, number>>((acc, e) => {
+      acc[e.payType] = (acc[e.payType] ?? 0) + 1
+      return acc
+    }, {}),
+  )
+
+  return employees
 }
