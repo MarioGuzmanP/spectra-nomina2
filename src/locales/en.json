@@ -194,7 +194,12 @@
       "biweekly": "Bi-weekly",
       "weekly": "Weekly",
       "fetchData": "Fetch Data",
-      "selectPeriodFirst": "Select a pay period first"
+      "selectPeriodFirst": "Select a pay period first",
+      "selectMonth": "Month",
+      "selectYear": "Year",
+      "quincena1": "1st Fortnight (1–15)",
+      "quincena2": "2nd Fortnight (16–end of month)",
+      "selectedPeriod": "Selected Period"
     },
     "review": {
       "title": "Review Hours",

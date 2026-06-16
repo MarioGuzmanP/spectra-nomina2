@@ -194,7 +194,12 @@
       "biweekly": "Quincenal",
       "weekly": "Semanal",
       "fetchData": "Obtener datos",
-      "selectPeriodFirst": "Selecciona un período primero"
+      "selectPeriodFirst": "Selecciona un período primero",
+      "selectMonth": "Mes",
+      "selectYear": "Año",
+      "quincena1": "1ra Quincena (1–15)",
+      "quincena2": "2da Quincena (16–fin de mes)",
+      "selectedPeriod": "Período seleccionado"
     },
     "review": {
       "title": "Revisar Horas",

@@ -377,39 +377,52 @@ export async function fetchHoursForPeriod(
   return { hoursMap, users: activityUsers, tokenUpdate: finalTokenUpdate }
 }
 
+// Returns the ISO week Monday (YYYY-MM-DD) for any date
+function isoWeekMonday(date: Date): string {
+  const d = new Date(date)
+  d.setHours(0, 0, 0, 0)
+  const day = d.getDay() // 0=Sun, 1=Mon, …, 6=Sat
+  const offset = day === 0 ? -6 : 1 - day   // shift back to Monday
+  d.setDate(d.getDate() + offset)
+  return d.toISOString().split('T')[0]
+}
+
+// Groups every day in [startDate, endDate] by its ISO week (Mon–Sun),
+// sums hours per week, then applies the OT threshold to each week.
+// This correctly handles biweekly periods of any length (14 or 15 days)
+// and aligns OT with calendar weeks as required by Dominican labor law.
 function groupDailyIntoWeeks(
   dailyMap: Record<string, number>,
   startDate: string,
   endDate: string,
-  frequency: 'biweekly' | 'weekly',
+  _frequency: 'biweekly' | 'weekly',
   otThreshold: number,
 ): WeeklyHours[] {
-  const weeks: WeeklyHours[] = []
+  const weekHours = new Map<string, number>()
+  const weekOrder: string[] = []
+
   const start = new Date(startDate + 'T00:00:00')
   const end = new Date(endDate + 'T00:00:00')
-  const weeksCount = frequency === 'biweekly' ? 2 : 1
+  const current = new Date(start)
 
-  for (let w = 0; w < weeksCount; w++) {
-    const weekStart = new Date(start)
-    weekStart.setDate(start.getDate() + w * 7)
-    const weekEnd = new Date(weekStart)
-    weekEnd.setDate(weekStart.getDate() + 6)
-    const actualEnd = weekEnd > end ? end : weekEnd
+  while (current <= end) {
+    const dateStr = current.toISOString().split('T')[0]
+    const weekKey = isoWeekMonday(new Date(current))
 
-    let weekHours = 0
-    const current = new Date(weekStart)
-    while (current <= actualEnd) {
-      const dateStr = current.toISOString().split('T')[0]
-      weekHours += dailyMap[dateStr] ?? 0
-      current.setDate(current.getDate() + 1)
+    if (!weekHours.has(weekKey)) {
+      weekHours.set(weekKey, 0)
+      weekOrder.push(weekKey)
     }
-
-    weeks.push({
-      weekStart: weekStart.toISOString().split('T')[0],
-      regular: Math.min(weekHours, otThreshold),
-      ot: Math.max(0, weekHours - otThreshold),
-    })
+    weekHours.set(weekKey, (weekHours.get(weekKey) ?? 0) + (dailyMap[dateStr] ?? 0))
+    current.setDate(current.getDate() + 1)
   }
 
-  return weeks
+  return weekOrder.map((weekKey) => {
+    const hours = weekHours.get(weekKey) ?? 0
+    return {
+      weekStart: weekKey,
+      regular: Math.min(hours, otThreshold),
+      ot: Math.max(0, hours - otThreshold),
+    }
+  })
 }
