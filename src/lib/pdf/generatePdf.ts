@@ -1,11 +1,35 @@
 import type { ReactElement } from 'react'
 
+let fontsRegistered = false
+
+/**
+ * Registers an embedded Unicode font (Roboto, bundled in /public/fonts) so the PDF
+ * renders the full Latin set — accents/ñ (e.g. "Idaly Peña"), accented company names,
+ * and currency symbols like ₱ and ₡ — which the built-in Helvetica (WinAnsi) cannot.
+ * Served same-origin, so it works offline with no external CDN dependency.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function registerFonts(Font: any) {
+  if (fontsRegistered) return
+  Font.register({
+    family: 'Roboto',
+    fonts: [
+      { src: '/fonts/Roboto-Regular.ttf', fontWeight: 'normal' },
+      { src: '/fonts/Roboto-Bold.ttf', fontWeight: 'bold' },
+    ],
+  })
+  // Keep words intact (no automatic hyphenation of names/amounts).
+  Font.registerHyphenationCallback((word: string) => [word])
+  fontsRegistered = true
+}
+
 /**
  * Lazily imports @react-pdf/renderer so the 434KB chunk is only loaded
  * when the user actually requests a PDF, not on initial page load.
  */
 async function getPdfRenderer() {
-  const { pdf } = await import('@react-pdf/renderer')
+  const { pdf, Font } = await import('@react-pdf/renderer')
+  registerFonts(Font)
   return { pdf }
 }
 

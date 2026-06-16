@@ -9,6 +9,7 @@ import {
 import type { PayrollEntry, CompanySettings } from '@/types'
 import { roundHalfUp } from '@/lib/payroll/calculations'
 import { getCurrencySymbol } from '@/lib/payroll/rules'
+import { logoSrc } from './logo'
 
 const EMERALD = '#059669'
 const EMERALD_DARK = '#065F46'
@@ -22,25 +23,25 @@ const GRAY_900 = '#111827'
 const RED = '#DC2626'
 
 const S = StyleSheet.create({
-  page: { fontFamily: 'Helvetica', fontSize: 8.5, padding: '28 36', backgroundColor: '#FFFFFF', color: GRAY_900 },
+  page: { fontFamily: 'Roboto', fontSize: 8.5, padding: '28 36', backgroundColor: '#FFFFFF', color: GRAY_900 },
 
   // ── Header ──────────────────────────────────────────────────────────────────
   header: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14, paddingBottom: 12, borderBottom: `1 solid ${GRAY_200}` },
   logoWrap: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   logo: { width: 42, height: 42, borderRadius: 5, objectFit: 'contain' },
-  companyName: { fontSize: 13, fontFamily: 'Helvetica-Bold', color: EMERALD, marginBottom: 2 },
+  companyName: { fontSize: 13, fontFamily: 'Roboto', fontWeight: 700, color: EMERALD, marginBottom: 2 },
   companyMeta: { fontSize: 7.5, color: GRAY_500, marginTop: 1 },
   headerRight: { alignItems: 'flex-end' },
-  stubTitle: { fontSize: 15, fontFamily: 'Helvetica-Bold', color: GRAY_900, letterSpacing: 1.5, marginBottom: 4 },
+  stubTitle: { fontSize: 15, fontFamily: 'Roboto', fontWeight: 700, color: GRAY_900, letterSpacing: 1.5, marginBottom: 4 },
   metaRow: { flexDirection: 'row', gap: 8, marginTop: 2 },
   metaLabel: { fontSize: 7.5, color: GRAY_500 },
-  metaValue: { fontSize: 7.5, fontFamily: 'Helvetica-Bold', color: GRAY_700 },
+  metaValue: { fontSize: 7.5, fontFamily: 'Roboto', fontWeight: 700, color: GRAY_700 },
 
   // ── Employee box ────────────────────────────────────────────────────────────
   empBox: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: GRAY_50, borderLeft: `3 solid ${EMERALD}`, borderRadius: 5, padding: '9 12', marginBottom: 14, gap: 12 },
-  empName: { fontSize: 11, fontFamily: 'Helvetica-Bold', color: GRAY_900, marginBottom: 3 },
+  empName: { fontSize: 11, fontFamily: 'Roboto', fontWeight: 700, color: GRAY_900, marginBottom: 3 },
   empMeta: { fontSize: 7.5, color: GRAY_500, marginTop: 1 },
-  empMetaValue: { fontFamily: 'Helvetica-Bold', color: GRAY_700 },
+  empMetaValue: { fontFamily: 'Roboto', fontWeight: 700, color: GRAY_700 },
 
   // ── Section ─────────────────────────────────────────────────────────────────
   section: { marginBottom: 12 },
@@ -52,27 +53,27 @@ const S = StyleSheet.create({
 
   // ── Earnings table ──────────────────────────────────────────────────────────
   earnHead: { backgroundColor: EMERALD, borderRadius: '4 4 0 0' },
-  earnHeadText: { fontSize: 8, fontFamily: 'Helvetica-Bold', color: '#FFFFFF' },
+  earnHeadText: { fontSize: 8, fontFamily: 'Roboto', fontWeight: 700, color: '#FFFFFF' },
   earnCell: { fontSize: 8, color: GRAY_700 },
-  earnCellBold: { fontSize: 8, fontFamily: 'Helvetica-Bold', color: GRAY_900 },
-  earnTotal: { fontSize: 9, fontFamily: 'Helvetica-Bold', color: GRAY_900 },
-  earnTotalValue: { fontSize: 9, fontFamily: 'Helvetica-Bold', color: EMERALD },
+  earnCellBold: { fontSize: 8, fontFamily: 'Roboto', fontWeight: 700, color: GRAY_900 },
+  earnTotal: { fontSize: 9, fontFamily: 'Roboto', fontWeight: 700, color: GRAY_900 },
+  earnTotalValue: { fontSize: 9, fontFamily: 'Roboto', fontWeight: 700, color: EMERALD },
 
   // ── Deductions table ────────────────────────────────────────────────────────
   dedHead: { backgroundColor: GRAY_700, borderRadius: '4 4 0 0' },
-  dedHeadText: { fontSize: 8, fontFamily: 'Helvetica-Bold', color: '#FFFFFF' },
+  dedHeadText: { fontSize: 8, fontFamily: 'Roboto', fontWeight: 700, color: '#FFFFFF' },
   dedLabel: { fontSize: 8, color: GRAY_700 },
   dedRate: { fontSize: 8, color: GRAY_500 },
   dedArrow: { fontSize: 8, color: GRAY_500 },
-  dedAmount: { fontSize: 8, fontFamily: 'Helvetica-Bold', color: RED },
-  dedAmountNeutral: { fontSize: 8, fontFamily: 'Helvetica-Bold', color: GRAY_700 },
-  dedTotalLabel: { fontSize: 9, fontFamily: 'Helvetica-Bold', color: GRAY_900 },
-  dedTotalValue: { fontSize: 9, fontFamily: 'Helvetica-Bold', color: RED },
+  dedAmount: { fontSize: 8, fontFamily: 'Roboto', fontWeight: 700, color: RED },
+  dedAmountNeutral: { fontSize: 8, fontFamily: 'Roboto', fontWeight: 700, color: GRAY_700 },
+  dedTotalLabel: { fontSize: 9, fontFamily: 'Roboto', fontWeight: 700, color: GRAY_900 },
+  dedTotalValue: { fontSize: 9, fontFamily: 'Roboto', fontWeight: 700, color: RED },
 
   // ── Net income row ──────────────────────────────────────────────────────────
   netRow: { flexDirection: 'row', padding: '7 8', backgroundColor: EMERALD_LIGHT, borderTop: `1 solid ${EMERALD}` },
-  netLabel: { fontSize: 10, fontFamily: 'Helvetica-Bold', color: EMERALD_DARK },
-  netValue: { fontSize: 10, fontFamily: 'Helvetica-Bold', color: EMERALD },
+  netLabel: { fontSize: 10, fontFamily: 'Roboto', fontWeight: 700, color: EMERALD_DARK },
+  netValue: { fontSize: 10, fontFamily: 'Roboto', fontWeight: 700, color: EMERALD },
 
   // ── Footer ──────────────────────────────────────────────────────────────────
   footer: { marginTop: 16, paddingTop: 7, borderTop: `0.5 solid ${GRAY_200}`, flexDirection: 'row', justifyContent: 'space-between' },
@@ -214,6 +215,7 @@ export function PayStubDocument({
   const { employee: emp, calculation: c, hours: h } = entry
   // Admin-entered rate (for "Not set" employees) takes precedence over BambooHR rate
   const effectiveRate = h.payRateOverride ?? emp.payRate
+  const logo = logoSrc(company.logoBase64)
   const l = L[lang]
   const today = new Date().toLocaleDateString(lang === 'es' ? 'es-DO' : 'en-US')
 
@@ -245,8 +247,8 @@ export function PayStubDocument({
         {/* ── HEADER ── */}
         <View style={S.header}>
           <View style={S.logoWrap}>
-            {company.logoBase64 && (
-              <Image style={S.logo} src={`data:image/png;base64,${company.logoBase64}`} />
+            {logo && (
+              <Image style={S.logo} src={logo} />
             )}
             <View>
               <Text style={S.companyName}>{company.name}</Text>

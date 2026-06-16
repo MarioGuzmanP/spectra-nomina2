@@ -231,6 +231,7 @@
       "zeroHours": "Zero Hours",
       "edited": "Edited",
       "filter": "Show",
+      "searchPlaceholder": "Search employee...",
       "filterAll": "All",
       "filterWithHours": "With Hours",
       "filterZeroHours": "Zero Hours",

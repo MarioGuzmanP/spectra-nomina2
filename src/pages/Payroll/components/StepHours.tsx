@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Clock, Pencil, CheckCircle2, AlertTriangle, MapPin, CalendarDays, Calculator } from 'lucide-react'
+import { Clock, Pencil, CheckCircle2, AlertTriangle, MapPin, CalendarDays, Calculator, Search } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -58,6 +58,7 @@ export function StepHours({ employeeHours, startDate, endDate, frequency, countr
   const employees = useEmployeesStore((s) => s.employees)
   const [hours, setHours] = useState<EmployeeHoursEntry[]>(employeeHours)
   const [filter, setFilter] = useState<Filter>('all')
+  const [search, setSearch] = useState('')
   const [soloTarget, setSoloTarget] = useState<SoloTarget | null>(null)
 
   const holidays = useMemo(
@@ -86,15 +87,23 @@ export function StepHours({ employeeHours, startDate, endDate, frequency, countr
   }
 
   const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
     return hours.filter((h) => {
       const total = totalHours(h)
-      if (filter === 'with-hours') return total > 0
-      if (filter === 'zero-hours') return total === 0
-      if (filter === 'no-match') return !h.hubstaffUserId
-      if (filter === 'ot') return h.otHours > 0
+      // Filter tab
+      if (filter === 'with-hours' && total <= 0) return false
+      if (filter === 'zero-hours' && total !== 0) return false
+      if (filter === 'no-match' && h.hubstaffUserId) return false
+      if (filter === 'ot' && h.otHours <= 0) return false
+      // Name search (combined with the active filter tab)
+      if (q) {
+        const emp = employees.find((e) => e.id === h.employeeId)
+        if (!emp) return false
+        if (!`${emp.firstName} ${emp.lastName}`.toLowerCase().includes(q)) return false
+      }
       return true
     })
-  }, [hours, filter])
+  }, [hours, filter, search, employees])
 
   const filterCounts = useMemo(() => ({
     all: hours.length,
@@ -188,8 +197,20 @@ export function StepHours({ employeeHours, startDate, endDate, frequency, countr
               </div>
             </div>
 
-            {/* Filter bar */}
-            <div className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 p-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Employee search */}
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder={t('payroll.review.searchPlaceholder')}
+                  className="h-8 w-48 pl-8 text-xs"
+                />
+              </div>
+
+              {/* Filter bar */}
+              <div className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 p-1">
               {FILTERS.map(({ key, label }) => (
                 <button
                   key={key}
@@ -211,6 +232,7 @@ export function StepHours({ employeeHours, startDate, endDate, frequency, countr
                   </span>
                 </button>
               ))}
+              </div>
             </div>
           </div>
         </CardHeader>

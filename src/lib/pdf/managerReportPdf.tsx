@@ -8,6 +8,7 @@ import {
 } from '@react-pdf/renderer'
 import type { PayrollEntry, PayrollTotals, CompanySettings } from '@/types'
 import { roundHalfUp } from '@/lib/payroll/calculations'
+import { logoSrc } from './logo'
 
 const EMERALD = '#059669'
 const EMERALD_LIGHT = '#ECFDF5'
@@ -20,50 +21,50 @@ const GRAY_900 = '#111827'
 const RED = '#DC2626'
 
 const S = StyleSheet.create({
-  page: { fontFamily: 'Helvetica', fontSize: 8, padding: '28 32', backgroundColor: '#FFFFFF', color: GRAY_900 },
+  page: { fontFamily: 'Roboto', fontSize: 8, padding: '28 32', backgroundColor: '#FFFFFF', color: GRAY_900 },
 
   // ── Header ──────────────────────────────────────────────────────────────────
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16, paddingBottom: 12, borderBottom: `1.5 solid ${EMERALD}` },
   logoWrap: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   logo: { width: 40, height: 40, borderRadius: 5, objectFit: 'contain' },
-  companyName: { fontSize: 13, fontFamily: 'Helvetica-Bold', color: EMERALD, marginBottom: 2 },
+  companyName: { fontSize: 13, fontFamily: 'Roboto', fontWeight: 700, color: EMERALD, marginBottom: 2 },
   companyMeta: { fontSize: 7, color: GRAY_500, marginTop: 1 },
   headerRight: { alignItems: 'flex-end' },
-  reportTitle: { fontSize: 14, fontFamily: 'Helvetica-Bold', color: GRAY_900, letterSpacing: 1, marginBottom: 4 },
+  reportTitle: { fontSize: 14, fontFamily: 'Roboto', fontWeight: 700, color: GRAY_900, letterSpacing: 1, marginBottom: 4 },
   metaRow: { flexDirection: 'row', gap: 6, marginTop: 2 },
   metaLabel: { fontSize: 7.5, color: GRAY_500 },
-  metaValue: { fontSize: 7.5, fontFamily: 'Helvetica-Bold', color: GRAY_700 },
+  metaValue: { fontSize: 7.5, fontFamily: 'Roboto', fontWeight: 700, color: GRAY_700 },
 
   // ── Section title ────────────────────────────────────────────────────────────
-  sectionTitle: { fontSize: 8.5, fontFamily: 'Helvetica-Bold', color: GRAY_900, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6, marginTop: 14, paddingBottom: 3, borderBottom: `1 solid ${GRAY_200}` },
+  sectionTitle: { fontSize: 8.5, fontFamily: 'Roboto', fontWeight: 700, color: GRAY_900, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6, marginTop: 14, paddingBottom: 3, borderBottom: `1 solid ${GRAY_200}` },
 
   // ── Executive summary cards ──────────────────────────────────────────────────
   summaryRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   summaryCard: { flex: 1, backgroundColor: GRAY_50, borderRadius: 5, padding: '8 10', borderLeft: `3 solid ${GRAY_200}` },
   summaryCardEmph: { flex: 1, backgroundColor: EMERALD_LIGHT, borderRadius: 5, padding: '8 10', borderLeft: `3 solid ${EMERALD}` },
   summaryLabel: { fontSize: 7, color: GRAY_500, marginBottom: 3 },
-  summaryValue: { fontSize: 11, fontFamily: 'Helvetica-Bold', color: GRAY_900 },
-  summaryValueEmph: { fontSize: 11, fontFamily: 'Helvetica-Bold', color: EMERALD },
+  summaryValue: { fontSize: 11, fontFamily: 'Roboto', fontWeight: 700, color: GRAY_900 },
+  summaryValueEmph: { fontSize: 11, fontFamily: 'Roboto', fontWeight: 700, color: EMERALD },
   summaryBreakRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 2 },
   summaryBreakLabel: { fontSize: 7, color: GRAY_500 },
-  summaryBreakValue: { fontSize: 7, fontFamily: 'Helvetica-Bold', color: RED },
+  summaryBreakValue: { fontSize: 7, fontFamily: 'Roboto', fontWeight: 700, color: RED },
 
   // ── Detail table ────────────────────────────────────────────────────────────
   tHead: { flexDirection: 'row', backgroundColor: EMERALD, padding: '4 6', borderRadius: '3 3 0 0' },
-  tHeadText: { fontSize: 7, fontFamily: 'Helvetica-Bold', color: '#FFFFFF', textAlign: 'right' },
-  tHeadLeft: { fontSize: 7, fontFamily: 'Helvetica-Bold', color: '#FFFFFF' },
+  tHeadText: { fontSize: 7, fontFamily: 'Roboto', fontWeight: 700, color: '#FFFFFF', textAlign: 'right' },
+  tHeadLeft: { fontSize: 7, fontFamily: 'Roboto', fontWeight: 700, color: '#FFFFFF' },
   tRow: { flexDirection: 'row', padding: '3.5 6', borderBottom: `0.5 solid ${GRAY_100}` },
   tRowAlt: { flexDirection: 'row', padding: '3.5 6', borderBottom: `0.5 solid ${GRAY_100}`, backgroundColor: GRAY_50 },
   tCell: { fontSize: 7, color: GRAY_700, textAlign: 'right' },
   tCellLeft: { fontSize: 7, color: GRAY_700 },
-  tCellBold: { fontSize: 7, fontFamily: 'Helvetica-Bold', color: GRAY_900, textAlign: 'right' },
-  tCellRed: { fontSize: 7, fontFamily: 'Helvetica-Bold', color: RED, textAlign: 'right' },
-  tCellGreen: { fontSize: 7, fontFamily: 'Helvetica-Bold', color: EMERALD, textAlign: 'right' },
+  tCellBold: { fontSize: 7, fontFamily: 'Roboto', fontWeight: 700, color: GRAY_900, textAlign: 'right' },
+  tCellRed: { fontSize: 7, fontFamily: 'Roboto', fontWeight: 700, color: RED, textAlign: 'right' },
+  tCellGreen: { fontSize: 7, fontFamily: 'Roboto', fontWeight: 700, color: EMERALD, textAlign: 'right' },
   tTotal: { flexDirection: 'row', padding: '4.5 6', borderTop: `1.5 solid ${GRAY_200}`, backgroundColor: GRAY_100 },
-  tTotalLabel: { fontSize: 7.5, fontFamily: 'Helvetica-Bold', color: GRAY_900 },
-  tTotalValue: { fontSize: 7.5, fontFamily: 'Helvetica-Bold', color: GRAY_900, textAlign: 'right' },
-  tTotalGreen: { fontSize: 7.5, fontFamily: 'Helvetica-Bold', color: EMERALD, textAlign: 'right' },
-  tTotalRed: { fontSize: 7.5, fontFamily: 'Helvetica-Bold', color: RED, textAlign: 'right' },
+  tTotalLabel: { fontSize: 7.5, fontFamily: 'Roboto', fontWeight: 700, color: GRAY_900 },
+  tTotalValue: { fontSize: 7.5, fontFamily: 'Roboto', fontWeight: 700, color: GRAY_900, textAlign: 'right' },
+  tTotalGreen: { fontSize: 7.5, fontFamily: 'Roboto', fontWeight: 700, color: EMERALD, textAlign: 'right' },
+  tTotalRed: { fontSize: 7.5, fontFamily: 'Roboto', fontWeight: 700, color: RED, textAlign: 'right' },
 
   // ── Dept table ──────────────────────────────────────────────────────────────
   dHead: { flexDirection: 'row', backgroundColor: GRAY_700, padding: '4 6', borderRadius: '3 3 0 0' },
@@ -211,6 +212,7 @@ export function ManagerReportDocument({
   const l = RL[lang]
   const today = new Date().toLocaleDateString(lang === 'es' ? 'es-DO' : 'en-US')
   const deptRows = buildDeptSummary(entries)
+  const logo = logoSrc(company.logoBase64)
 
   // Column flex widths for employee detail table
   const cName = 3.5, cDept = 2, cReg = 1.2, cOT = 1.2, cHol = 1.2
@@ -223,8 +225,8 @@ export function ManagerReportDocument({
         {/* ── HEADER ── */}
         <View style={S.header}>
           <View style={S.logoWrap}>
-            {company.logoBase64 && (
-              <Image style={S.logo} src={`data:image/png;base64,${company.logoBase64}`} />
+            {logo && (
+              <Image style={S.logo} src={logo} />
             )}
             <View>
               <Text style={S.companyName}>{company.name}</Text>

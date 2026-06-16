@@ -3,15 +3,15 @@ import type { Employee, CompanySettings } from '@/types'
 import { formatPayRate, formatDate } from '@/lib/utils'
 
 const S = StyleSheet.create({
-  page: { fontFamily: 'Helvetica', fontSize: 9, padding: 32, backgroundColor: '#FFFFFF', color: '#111827' },
+  page: { fontFamily: 'Roboto', fontSize: 9, padding: 32, backgroundColor: '#FFFFFF', color: '#111827' },
   header: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20, paddingBottom: 14, borderBottom: '1 solid #E5E7EB' },
-  companyName: { fontSize: 13, fontFamily: 'Helvetica-Bold', color: '#059669' },
+  companyName: { fontSize: 13, fontFamily: 'Roboto', fontWeight: 700, color: '#059669' },
   companyMeta: { fontSize: 8, color: '#6B7280', marginTop: 2 },
-  reportTitle: { fontSize: 11, fontFamily: 'Helvetica-Bold', color: '#111827', textAlign: 'right' },
+  reportTitle: { fontSize: 11, fontFamily: 'Roboto', fontWeight: 700, color: '#111827', textAlign: 'right' },
   reportDate: { fontSize: 8, color: '#6B7280', textAlign: 'right', marginTop: 2 },
   table: { marginTop: 8 },
   thead: { flexDirection: 'row', backgroundColor: '#F9FAFB', borderBottom: '1 solid #E5E7EB', paddingVertical: 5, paddingHorizontal: 4 },
-  th: { fontSize: 7, fontFamily: 'Helvetica-Bold', color: '#6B7280', textTransform: 'uppercase', flex: 1 },
+  th: { fontSize: 7, fontFamily: 'Roboto', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', flex: 1 },
   row: { flexDirection: 'row', borderBottom: '1 solid #F3F4F6', paddingVertical: 5, paddingHorizontal: 4 },
   rowAlt: { flexDirection: 'row', borderBottom: '1 solid #F3F4F6', paddingVertical: 5, paddingHorizontal: 4, backgroundColor: '#F9FAFB' },
   cell: { fontSize: 8, color: '#374151', flex: 1 },
@@ -21,9 +21,9 @@ const S = StyleSheet.create({
   summary: { flexDirection: 'row', gap: 16, marginTop: 14 },
   summaryBox: { backgroundColor: '#ECFDF5', borderRadius: 4, padding: 8, flex: 1 },
   summaryLabel: { fontSize: 7, color: '#065F46' },
-  summaryValue: { fontSize: 11, fontFamily: 'Helvetica-Bold', color: '#059669', marginTop: 2 },
+  summaryValue: { fontSize: 11, fontFamily: 'Roboto', fontWeight: 700, color: '#059669', marginTop: 2 },
   section: { marginTop: 14 },
-  sectionTitle: { fontSize: 9, fontFamily: 'Helvetica-Bold', color: '#059669', marginBottom: 6, paddingBottom: 3, borderBottom: '1 solid #E5E7EB' },
+  sectionTitle: { fontSize: 9, fontFamily: 'Roboto', fontWeight: 700, color: '#059669', marginBottom: 6, paddingBottom: 3, borderBottom: '1 solid #E5E7EB' },
 })
 
 export type ReportColumn = 'name' | 'email' | 'department' | 'jobTitle' | 'payRate' | 'payType' | 'hireDate' | 'status'

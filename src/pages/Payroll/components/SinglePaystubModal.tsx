@@ -9,6 +9,7 @@ import { usePayrollStore } from '@/store/payrollStore'
 import { calculatePayroll, formatCurrencyWithSymbol, findFirstFortnightGross } from '@/lib/payroll/calculations'
 import { getPayrollRules } from '@/lib/payroll/rules'
 import { generatePdfBlob, downloadBlob, blobToBase64 } from '@/lib/pdf/generatePdf'
+import { logoSrc } from '@/lib/pdf/logo'
 import { toast } from '@/hooks/useToast'
 import type { Employee, EmployeeHoursEntry } from '@/types'
 
@@ -185,9 +186,9 @@ export function SinglePaystubModal({ employee, hoursEntry, startDate, endDate, f
           {/* Header */}
           <div className="flex items-start justify-between px-5 py-4 border-b border-gray-100">
             <div className="flex items-start gap-3">
-              {company.logoBase64 && (
+              {logoSrc(company.logoBase64) && (
                 <img
-                  src={`data:image/png;base64,${company.logoBase64}`}
+                  src={logoSrc(company.logoBase64)}
                   alt="logo"
                   className="h-10 w-10 rounded-lg object-contain"
                 />

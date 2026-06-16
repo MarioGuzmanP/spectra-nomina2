@@ -231,6 +231,7 @@
       "zeroHours": "Sin horas",
       "edited": "Editado",
       "filter": "Mostrar",
+      "searchPlaceholder": "Buscar empleado...",
       "filterAll": "Todos",
       "filterWithHours": "Con horas",
       "filterZeroHours": "Sin horas",
