@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   calculatePayroll,
   calculateAnnualISR,
+  findFirstFortnightGross,
   roundHalfUp,
   splitOTHours,
 } from '../calculations'
@@ -29,10 +30,9 @@ function makeInput(overrides: Partial<CalculationInput> = {}): CalculationInput 
   }
 }
 
-// ─── Test 1: ISR Calculation (annualized from gross × 24) ─────────────────────
-describe('ISR Calculation', () => {
+// ─── Test 1: ISR Calculation (no periodStart → per-period, gross-annualized) ───
+describe('ISR Calculation (per-period, gross-annualized fallback)', () => {
   it('employee below RD$416,220/year → ISR = 0', () => {
-    // ISR annualized from GROSS × 24 (not grossAfterTSS)
     // hourlyRate=100, 80hrs → gross=8,000 → annual=192,000 < 416,220 → exempt
     const input = makeInput({ hourlyRate: 100, regularHours: 80 })
     const result = calculatePayroll(input)
@@ -41,85 +41,84 @@ describe('ISR Calculation', () => {
   })
 
   it('employee in bracket 2 (15%) pays correct ISR', () => {
-    // gross × 24 must fall in bracket 2: 416,220.01 – 624,329
     // hourlyRate=220, 80hrs → gross=17,600 → annual=422,400 (bracket 2)
     const input = makeInput({ hourlyRate: 220, regularHours: 80 })
     const result = calculatePayroll(input)
-    const annualTaxable = result.taxableIncome  // gross × 24
+    const annualTaxable = result.taxableIncome
     expect(annualTaxable).toBeGreaterThan(416220)
     expect(annualTaxable).toBeLessThanOrEqual(624329)
-    const expectedAnnualISR = roundHalfUp((annualTaxable - 416220.01) * 0.15)
-    const expectedPeriodISR = roundHalfUp(expectedAnnualISR / 24)
+    const expectedPeriodISR = roundHalfUp(calculateAnnualISR(annualTaxable, baseFiscal.isrBrackets) / 24)
     expect(result.isrPeriod).toBe(expectedPeriodISR)
     expect(result.isrCalculated).toBe(expectedPeriodISR)
   })
 
-  it('employee in bracket 3 (RD$31,216 + 20%) pays correct ISR', () => {
-    // gross × 24 in bracket 3: 624,329.01 – 867,123
+  it('employee in bracket 3 (20%) pays correct ISR', () => {
     // hourlyRate=350, 80hrs → gross=28,000 → annual=672,000 (bracket 3)
     const input = makeInput({ hourlyRate: 350, regularHours: 80 })
     const result = calculatePayroll(input)
     const annualTaxable = result.taxableIncome
     expect(annualTaxable).toBeGreaterThan(624329)
     expect(annualTaxable).toBeLessThanOrEqual(867123)
-    const expectedAnnualISR = roundHalfUp(31216 + (annualTaxable - 624329.01) * 0.20)
-    const expectedPeriodISR = roundHalfUp(expectedAnnualISR / 24)
+    const expectedPeriodISR = roundHalfUp(calculateAnnualISR(annualTaxable, baseFiscal.isrBrackets) / 24)
     expect(result.isrPeriod).toBe(expectedPeriodISR)
     expect(result.isrCalculated).toBe(expectedPeriodISR)
   })
 
-  it('Idaly Peña test case: gross=28,000 → ISR=1,697.93/quincena', () => {
-    // User-specified test: 28,000 × 24 = 672,000
-    // ISR = 31,216 + (672,000 - 624,329.01) × 20% = 40,750.20
-    // Per quincena = 40,750.20 / 24 = 1,697.925 → 1,697.93
-    const input = makeInput({ hourlyRate: 350, regularHours: 80 })
-    const result = calculatePayroll(input)
-    expect(result.grossPay).toBe(28000)
-    expect(result.taxableIncome).toBe(672000)
-    expect(result.isrCalculated).toBe(1697.93)
-  })
-
-  it('employee in bracket 4 (RD$79,776 + 25%) pays correct ISR', () => {
-    // gross × 24 > 867,123
+  it('employee in bracket 4 (25%) pays correct ISR', () => {
     // hourlyRate=700, 80hrs → gross=56,000 → annual=1,344,000
     const input = makeInput({ hourlyRate: 700, regularHours: 80 })
     const result = calculatePayroll(input)
     const annualTaxable = result.taxableIncome
     expect(annualTaxable).toBeGreaterThan(867123)
-    const expectedAnnualISR = roundHalfUp(79776 + (annualTaxable - 867123.01) * 0.25)
-    const expectedPeriodISR = roundHalfUp(expectedAnnualISR / 24)
+    const expectedPeriodISR = roundHalfUp(calculateAnnualISR(annualTaxable, baseFiscal.isrBrackets) / 24)
     expect(result.isrPeriod).toBe(expectedPeriodISR)
     expect(result.isrCalculated).toBe(expectedPeriodISR)
   })
 })
 
-// ─── Test 2: Quincena ISR rule ────────────────────────────────────────────────
-describe('Quincena ISR Rule (DR biweekly)', () => {
-  it('1st quincena (day 1-15): ISR calculated but isrPeriod = 0 (deferred)', () => {
-    // periodStart day=1 → 1st quincena → ISR not retained
+// ─── Test 2: Monthly quincena ISR rule (the DGII fix) ─────────────────────────
+describe('Quincena Monthly ISR Rule (DR biweekly)', () => {
+  it('1st quincena (day 1-15): ISR deferred → isrPeriod = 0, isrDeferred = true', () => {
     const input = makeInput({ hourlyRate: 350, regularHours: 80, periodStart: '2026-03-01' })
     const result = calculatePayroll(input)
-    expect(result.isrCalculated).toBe(1697.93)
     expect(result.isrPeriod).toBe(0)
+    expect(result.isrDeferred).toBe(true)
+    expect(result.isrMonthlyBase).toBe(0)
     const expectedNet = roundHalfUp(result.grossPay - result.tssTotal - result.customDeductions)
     expect(result.netPay).toBe(expectedNet)
   })
 
-  it('1st quincena (day 10): ISR still = 0 (any day 1-15)', () => {
+  it('1st quincena (day 10): still deferred for any day 1-15', () => {
     const input = makeInput({ hourlyRate: 350, regularHours: 80, periodStart: '2026-03-10' })
     const result = calculatePayroll(input)
     expect(result.isrPeriod).toBe(0)
-    expect(result.isrCalculated).toBeGreaterThan(0)
+    expect(result.isrDeferred).toBe(true)
   })
 
-  it('2nd quincena (day 16-31): ISR retained = isrCalculated × 2', () => {
-    // periodStart day=16 → 2nd quincena → retain 2× (covers both halves)
-    const input = makeInput({ hourlyRate: 350, regularHours: 80, periodStart: '2026-03-16' })
+  it('Idaly Peña 2nd quincena (verified): monthly base 57,959.44 → ISR 3,787.77', () => {
+    // 1st fortnight gross 28,000 (net 26,345.20); 2nd fortnight gross 33,600 (420×80, net 31,614.24)
+    // base_mensual = 57,959.44 → ×12 = 695,513.28 → ISR anual 45,453.21 → /12 = 3,787.77
+    const input = makeInput({
+      hourlyRate: 420,
+      regularHours: 80,
+      periodStart: '2026-03-16',
+      firstFortnightGross: 28000,
+    })
     const result = calculatePayroll(input)
-    expect(result.isrCalculated).toBe(1697.93)
-    expect(result.isrPeriod).toBe(roundHalfUp(1697.93 * 2))  // 3,395.86
-    const expectedNet = roundHalfUp(result.grossPay - result.tssTotal - result.isrPeriod - result.customDeductions)
-    expect(result.netPay).toBe(expectedNet)
+    expect(result.grossPay).toBe(33600)
+    expect(result.isrDeferred).toBe(false)
+    expect(result.isrMonthlyBase).toBe(57959.44)
+    expect(result.taxableIncome).toBe(695513.28)
+    expect(result.isrMonthly).toBe(3787.77)
+    expect(result.isrPeriod).toBe(3787.77)
+  })
+
+  it('2nd quincena without a saved 1st fortnight → assumes equal fortnights', () => {
+    const input = makeInput({ hourlyRate: 420, regularHours: 80, periodStart: '2026-03-16' })
+    const result = calculatePayroll(input)
+    const net = roundHalfUp(result.grossPay - result.tssTotal)
+    expect(result.isrMonthlyBase).toBe(roundHalfUp(net * 2))
+    expect(result.isrPeriod).toBeGreaterThan(0)
   })
 
   it('weekly payroll: ISR retained normally every period (quincena rule does not apply)', () => {
@@ -133,12 +132,14 @@ describe('Quincena ISR Rule (DR biweekly)', () => {
     const result = calculatePayroll(input)
     expect(result.isrPeriod).toBe(result.isrCalculated)
     expect(result.isrPeriod).toBeGreaterThan(0)
+    expect(result.isrDeferred).toBe(false)
   })
 
   it('no periodStart: ISR retained normally (backward compat)', () => {
     const input = makeInput({ hourlyRate: 350, regularHours: 80 })
     const result = calculatePayroll(input)
     expect(result.isrPeriod).toBe(result.isrCalculated)
+    expect(result.isrDeferred).toBe(false)
   })
 })
 
@@ -324,15 +325,14 @@ describe('calculateAnnualISR', () => {
     expect(calculateAnnualISR(520000, baseFiscal.isrBrackets)).toBe(expected)
   })
 
-  it('amount = 672,000 → bracket 3: 31,216 + 20% of excess (Idaly Peña annual)', () => {
-    const expected = roundHalfUp(31216 + (672000 - 624329.01) * 0.20)
-    expect(calculateAnnualISR(672000, baseFiscal.isrBrackets)).toBe(expected)
-    expect(expected).toBe(40750.20)
+  it('amount = 672,000 → bracket 3: 31,216.35 + 20% of excess (Idaly Peña annual)', () => {
+    // 31,216.35 + (672,000 - 624,329) × 0.20 = 31,216.35 + 9,534.20 = 40,750.55
+    expect(calculateAnnualISR(672000, baseFiscal.isrBrackets)).toBe(40750.55)
   })
 
-  it('amount = 900,000 → bracket 4: 79,776 + 25% of excess', () => {
-    const expected = roundHalfUp(79776 + (900000 - 867123.01) * 0.25)
-    expect(calculateAnnualISR(900000, baseFiscal.isrBrackets)).toBe(expected)
+  it('amount = 900,000 → bracket 4: 79,776.35 + 25% of excess', () => {
+    // 79,776.35 + (900,000 - 867,123) × 0.25 = 79,776.35 + 8,219.25 = 87,995.60
+    expect(calculateAnnualISR(900000, baseFiscal.isrBrackets)).toBe(87995.60)
   })
 })
 
@@ -385,5 +385,35 @@ describe('US Payroll Rules', () => {
     expect(result.isrPeriod).toBeGreaterThan(0)
     // US rules country is 'United States', so isDR=false, no quincena applied
     expect(usRules.country).toBe('United States')
+  })
+})
+
+// ─── Test 11: findFirstFortnightGross helper ──────────────────────────────────
+describe('findFirstFortnightGross', () => {
+  const firstQuincena = {
+    id: 'p1',
+    startDate: '2026-03-01',
+    endDate: '2026-03-15',
+    frequency: 'biweekly',
+    status: 'approved',
+    country: 'Dominican Republic',
+    entries: [
+      { employee: { id: 'emp-1' }, hours: {}, calculation: { grossPay: 28000 } },
+    ],
+    totals: {},
+  }
+
+  it('returns the 1st-fortnight gross for same month/country/employee', () => {
+    const history = [firstQuincena] as never
+    expect(findFirstFortnightGross(history, 'Dominican Republic', '2026-03-16', 'emp-1')).toBe(28000)
+  })
+
+  it('returns undefined when no matching 1st fortnight is saved', () => {
+    expect(findFirstFortnightGross([], 'Dominican Republic', '2026-03-16', 'emp-1')).toBeUndefined()
+  })
+
+  it('ignores periods from a different month', () => {
+    const history = [firstQuincena] as never
+    expect(findFirstFortnightGross(history, 'Dominican Republic', '2026-04-16', 'emp-1')).toBeUndefined()
   })
 })

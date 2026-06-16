@@ -5,7 +5,8 @@ import { Download, Mail, Loader2, X } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { useSettingsStore } from '@/store/settingsStore'
-import { calculatePayroll, formatCurrencyWithSymbol } from '@/lib/payroll/calculations'
+import { usePayrollStore } from '@/store/payrollStore'
+import { calculatePayroll, formatCurrencyWithSymbol, findFirstFortnightGross } from '@/lib/payroll/calculations'
 import { getPayrollRules } from '@/lib/payroll/rules'
 import { generatePdfBlob, downloadBlob, blobToBase64 } from '@/lib/pdf/generatePdf'
 import { toast } from '@/hooks/useToast'
@@ -48,6 +49,7 @@ export function SinglePaystubModal({ employee, hoursEntry, startDate, endDate, f
   const payrollSettings = useSettingsStore((s) => s.payroll)
   const emailConfig = useSettingsStore((s) => s.email)
   const emailTemplate = useSettingsStore((s) => s.emailTemplate)
+  const history = usePayrollStore((s) => s.history)
   const lang = (i18n.language?.startsWith('es') ? 'es' : 'en') as 'en' | 'es'
 
   const [downloading, setDownloading] = useState(false)
@@ -76,7 +78,8 @@ export function SinglePaystubModal({ employee, hoursEntry, startDate, endDate, f
     otRatePercent: payrollSettings.otRatePercent,
     holidayRatePercent: payrollSettings.holidayRatePercent,
     periodStart: startDate,
-  }), [employee, effectiveRate, hoursEntry, rules, payrollSettings, frequency, startDate])
+    firstFortnightGross: findFirstFortnightGross(history, country, startDate, employee.id),
+  }), [employee, effectiveRate, hoursEntry, rules, payrollSettings, frequency, startDate, country, history])
 
   const entry = useMemo(() => ({
     employee,
@@ -92,12 +95,8 @@ export function SinglePaystubModal({ employee, hoursEntry, startDate, endDate, f
   const complementaryAmt = lookupDed(calculation.customDeductionsBreakdown, ['complementary', 'complementario'])
   const remainingDeds    = otherDeds(calculation.customDeductionsBreakdown)
 
-  // "Salary for the month applicable to ISR" = gross pay for the period
-  const isrSalaryDisplay = calculation.grossPay
-
-  // Quincena ISR flags
-  const isrDeferred = Math.max(0, calculation.isrCalculated - calculation.isrPeriod)
-  const isrFromPrev = Math.max(0, calculation.isrPeriod - calculation.isrCalculated)
+  // "Salary for the month applicable to ISR" = monthly net base (net 1st + net 2nd fortnight)
+  const isrSalaryDisplay = calculation.isrMonthlyBase
 
   async function buildElement() {
     const { PayStubDocument } = await import('@/lib/pdf/payStubPdf')
@@ -296,40 +295,20 @@ export function SinglePaystubModal({ employee, hoursEntry, startDate, endDate, f
               <DedRow fmt={fmt} label={t('payroll.soloPaystub.afp')} rate="2.87%" amount={calculation.afpAmount} />
               <DedRow fmt={fmt} label={t('payroll.soloPaystub.payAdvance')} amount={payAdvanceAmt} />
               <DedRow fmt={fmt} label={t('payroll.soloPaystub.dependentTSS')} amount={dependentTSSAmt} />
-              {isrDeferred > 0 ? (
-                // 1st quincena: show 0 + informational note
+              {/* ISR — single line with the month's retained ISR. Hidden on the DR 1st
+                  quincena, where ISR is deferred to the 2nd fortnight. */}
+              {!calculation.isrDeferred && (
                 <>
-                  <DedRow fmt={fmt} label={t('payroll.soloPaystub.isr')} amount={0} />
-                  <tr className="bg-amber-50">
-                    <td colSpan={3} className="px-4 py-1.5 text-amber-700 text-xs italic">
-                      {t('payroll.soloPaystub.isrDeferred')}: {fmt(isrDeferred)}
-                    </td>
-                    <td />
-                  </tr>
-                </>
-              ) : isrFromPrev > 0 ? (
-                // 2nd quincena: breakdown
-                <>
-                  <DedRow fmt={fmt} label={t('payroll.soloPaystub.isr1stQuincena')} amount={isrFromPrev} />
-                  <DedRow fmt={fmt} label={t('payroll.soloPaystub.isr2ndQuincena')} amount={calculation.isrCalculated} />
-                  <tr className="bg-red-50">
-                    <td className="px-4 py-2 text-red-700 font-bold text-xs">{t('payroll.soloPaystub.isrTotalRetained')}</td>
+                  <DedRow fmt={fmt} label={t('payroll.soloPaystub.isr')} amount={calculation.isrPeriod} />
+                  {/* Salary for the month applicable to ISR — neutral reference row */}
+                  <tr className="bg-gray-50">
+                    <td className="px-4 py-2 text-gray-500 text-xs">{t('payroll.soloPaystub.isrSalary')}</td>
                     <td className="px-3 py-2" />
-                    <td className="w-6 py-2 text-center text-red-400 text-xs">►</td>
-                    <td className="px-4 py-2 text-right text-red-700 font-bold">{fmt(calculation.isrPeriod)}</td>
+                    <td className="w-6 py-2 text-center text-gray-400 text-xs">►</td>
+                    <td className="px-4 py-2 text-right text-gray-700 text-xs font-semibold">{fmt(isrSalaryDisplay)}</td>
                   </tr>
                 </>
-              ) : (
-                // Weekly / no quincena: single row
-                <DedRow fmt={fmt} label={t('payroll.soloPaystub.isr')} amount={calculation.isrPeriod} />
               )}
-              {/* ISR salary reference — shown in neutral color, not red */}
-              <tr className="bg-gray-50">
-                <td className="px-4 py-2 text-gray-500 text-xs">{t('payroll.soloPaystub.isrSalary')}</td>
-                <td className="px-3 py-2" />
-                <td className="w-6 py-2 text-center text-gray-400 text-xs">►</td>
-                <td className="px-4 py-2 text-right text-gray-700 text-xs font-semibold">{fmt(isrSalaryDisplay)}</td>
-              </tr>
               <DedRow fmt={fmt} label={t('payroll.soloPaystub.complementaryIns')} amount={complementaryAmt} />
               {remainingDeds.map((d) => (
                 <DedRow fmt={fmt} key={d.name} label={d.name} amount={d.amount} />

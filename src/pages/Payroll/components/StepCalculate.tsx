@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useEmployeesStore } from '@/store/employeesStore'
 import { useSettingsStore } from '@/store/settingsStore'
-import { calculatePayroll } from '@/lib/payroll/calculations'
+import { usePayrollStore } from '@/store/payrollStore'
+import { calculatePayroll, findFirstFortnightGross } from '@/lib/payroll/calculations'
 import { getPayrollRules } from '@/lib/payroll/rules'
 import { formatCurrency, getInitials } from '@/lib/utils'
 import { roundHalfUp } from '@/lib/payroll/calculations'
@@ -31,6 +32,7 @@ export function StepCalculate({ employeeHours, startDate, endDate: _endDate, fre
   const employees = useEmployeesStore((s) => s.employees)
   const fiscal = useSettingsStore((s) => s.fiscal)
   const payrollSettings = useSettingsStore((s) => s.payroll)
+  const history = usePayrollStore((s) => s.history)
 
   // Build country-specific payroll rules
   const rules = useMemo(
@@ -63,6 +65,7 @@ export function StepCalculate({ employeeHours, startDate, endDate: _endDate, fre
         otRatePercent: payrollSettings.otRatePercent,
         holidayRatePercent: payrollSettings.holidayRatePercent,
         periodStart: startDate,
+        firstFortnightGross: findFirstFortnightGross(history, country, startDate, emp.id),
       })
 
       computedEntries.push({ employee: emp, hours: h, calculation })
@@ -81,7 +84,7 @@ export function StepCalculate({ employeeHours, startDate, endDate: _endDate, fre
     }
 
     return { entries: computedEntries, totals }
-  }, [employeeHours, employees, rules, frequency, payrollSettings, startDate])
+  }, [employeeHours, employees, rules, frequency, payrollSettings, startDate, country, history])
 
   const ActionButtons = () => (
     <div className="flex gap-3">

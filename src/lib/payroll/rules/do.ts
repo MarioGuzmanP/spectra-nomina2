@@ -28,7 +28,10 @@ export function getDOPayrollRules(
     pensionName: 'Pension Retention (AFP)',
     healthInsuranceCap: roundHalfUp(fiscal.minCotizableSalary * fiscal.sfsCapMultiplier),
     pensionCap: roundHalfUp(fiscal.minCotizableSalary * fiscal.afpCapMultiplier),
-    calculateIncomeTax: (annualGross: number) => calculateAnnualISR(annualGross, fiscal.isrBrackets),
+    // DGII annual scale. The DR monthly-ISR aggregation (1st quincena deferred; 2nd
+    // quincena base = net 1st fortnight + net 2nd fortnight, ×12) lives in
+    // calculatePayroll, which has the per-employee TSS + period context this scale needs.
+    calculateIncomeTax: (annualTaxable: number) => calculateAnnualISR(annualTaxable, fiscal.isrBrackets),
     incomeTaxName: 'Tax Retention ISR (DGII)',
     payPeriodsPerYear,
     otThresholdHours: payroll.otThresholdHours,

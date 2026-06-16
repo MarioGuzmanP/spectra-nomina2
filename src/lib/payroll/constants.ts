@@ -10,8 +10,8 @@ export const DEFAULT_FISCAL_PARAMETERS: FiscalParameters = {
   isrBrackets: [
     { minAmount: 0, maxAmount: 416220.00, rate: 0, fixedAmount: 0 },
     { minAmount: 416220.01, maxAmount: 624329.00, rate: 15, fixedAmount: 0 },
-    { minAmount: 624329.01, maxAmount: 867123.00, rate: 20, fixedAmount: 31216.00 },
-    { minAmount: 867123.01, maxAmount: null, rate: 25, fixedAmount: 79776.00 },
+    { minAmount: 624329.01, maxAmount: 867123.00, rate: 20, fixedAmount: 31216.35 },
+    { minAmount: 867123.01, maxAmount: null, rate: 25, fixedAmount: 79776.35 },
   ],
 }
 

@@ -71,9 +71,11 @@ export interface PayrollCalculation {
   sfsAmount: number
   tssTotal: number
   taxableIncome: number
+  isrMonthlyBase: number // monthly net base the ISR scale is applied to (net 1st + net 2nd fortnight)
   isrMonthly: number
-  isrCalculated: number  // ISR for this period (before quincena override)
-  isrPeriod: number      // ISR actually retained (0 for 1st quincena)
+  isrCalculated: number  // ISR computed for the period (kept for compatibility)
+  isrPeriod: number      // ISR actually retained (0 for 1st quincena, full month's ISR on 2nd)
+  isrDeferred: boolean   // true only on DR 1st quincena (ISR deferred to 2nd fortnight)
   customDeductions: number
   customDeductionsBreakdown: Array<{ name: string; amount: number }>
   totalDeductions: number

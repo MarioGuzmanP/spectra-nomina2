@@ -1,4 +1,4 @@
-import type { ISRBracket } from '@/types'
+import type { ISRBracket, PayrollPeriod } from '@/types'
 import type { CalculationInput, CalculationResult } from './types'
 
 /**
@@ -96,14 +96,50 @@ function calculateCustomDeductions(
 }
 
 /**
+ * Finds the gross pay of an employee's 1st fortnight (same month + country) from
+ * saved payroll history. Used to build the DR 2nd-quincena monthly ISR base.
+ * Returns undefined when no matching 1st-quincena run is saved.
+ */
+export function findFirstFortnightGross(
+  history: PayrollPeriod[],
+  country: string,
+  secondFortnightStart: string,
+  employeeId: string,
+): number | undefined {
+  const d = new Date(secondFortnightStart + 'T00:00:00')
+  const year = d.getFullYear()
+  const month = d.getMonth()
+  const targetCountry = (country || '').toLowerCase().trim()
+
+  // Most recent matching 1st-quincena period in the same month + country
+  const matches = history.filter((p) => {
+    if (p.frequency !== 'biweekly') return false
+    const ps = new Date(p.startDate + 'T00:00:00')
+    if (ps.getFullYear() !== year || ps.getMonth() !== month) return false
+    if (ps.getDate() > 15) return false // must be the 1st quincena (day 1-15)
+    const pc = (p.country || '').toLowerCase().trim()
+    if (targetCountry && pc && pc !== targetCountry) return false
+    return true
+  })
+  if (matches.length === 0) return undefined
+
+  const period = matches[matches.length - 1]
+  const entry = period.entries.find((e) => e.employee.id === employeeId)
+  return entry?.calculation.grossPay
+}
+
+/**
  * Main payroll calculation function.
  * Pure function — no side effects, no UI dependencies.
  *
- * DR biweekly quincena ISR rule (only when rules.country includes 'dominican'):
- *   1st quincena (startDay=1-15): calculate ISR but retain 0 (defer to 2nd).
- *   2nd quincena (startDay 16-31): retain isrCalculated × 2 (covers both halves).
- *   US and other countries: retain ISR every period normally.
- *   Weekly / no periodStart: retain ISR every period normally.
+ * DR biweekly ISR rule (only when rules.country includes 'dominican'):
+ *   ISR is computed on income AFTER TSS (AFP + SFS), on a MONTHLY basis.
+ *   1st quincena (startDay 1-15): ISR deferred — retain 0.
+ *   2nd quincena (startDay 16-31): monthly base = net(1st fortnight) + net(2nd fortnight),
+ *     annualized ×12, DGII scale applied, ÷12 → the full month's ISR is retained here.
+ *     The 1st fortnight's gross is taken from input.firstFortnightGross (falls back to the
+ *     current fortnight when absent, i.e. assumes equal fortnights).
+ *   US and other countries / weekly / no periodStart: ISR retained every period (gross-annualized).
  */
 export function calculatePayroll(input: CalculationInput): CalculationResult {
   const {
@@ -137,9 +173,11 @@ export function calculatePayroll(input: CalculationInput): CalculationResult {
       sfsAmount: 0,
       tssTotal: 0,
       taxableIncome: 0,
+      isrMonthlyBase: 0,
       isrMonthly: 0,
       isrCalculated: 0,
       isrPeriod: 0,
+      isrDeferred: false,
       customDeductionsBreakdown: [],
       customDeductions: 0,
       totalDeductions: 0,
@@ -166,21 +204,50 @@ export function calculatePayroll(input: CalculationInput): CalculationResult {
 
   const tssTotal = roundHalfUp(afpAmount + sfsAmount)
 
-  // Income tax — annualize gross, compute annual tax, divide by periods
-  const annualGross = roundHalfUp(earnings.grossPay * rules.payPeriodsPerYear)
-  const annualTax = rules.calculateIncomeTax(annualGross)
-  const isrCalculated = roundHalfUp(annualTax / rules.payPeriodsPerYear)
-  const isrMonthly = roundHalfUp(annualTax / 12)
+  // ── Income tax (ISR) ───────────────────────────────────────────────────────
+  // This fortnight's income net of TSS (ISR is applied AFTER AFP + SFS).
+  const netThisPeriod = roundHalfUp(earnings.grossPay - tssTotal)
 
-  // Quincena ISR rule — only DR biweekly
-  let isrRetained: number
+  // TSS for an arbitrary gross (applies the same caps as this period) — used to
+  // derive the 1st fortnight's net from its gross.
+  const tssForGross = (gross: number): number => {
+    const afp = roundHalfUp(Math.min(gross, rules.pensionCap ?? gross) * (rules.pensionRate / 100))
+    const sfs = roundHalfUp(Math.min(gross, rules.healthInsuranceCap ?? gross) * (rules.healthInsuranceRate / 100))
+    return roundHalfUp(afp + sfs)
+  }
+
+  let isrMonthlyBase: number  // monthly net base the DGII scale is applied to
+  let isrMonthly: number      // full month's ISR (annual ÷ 12)
+  let isrRetained: number     // ISR actually withheld this period
+  let annualTaxable: number   // annualized taxable base (for reference/display)
+
   if (quincena === 1) {
+    // DR 1st quincena: defer ISR to the 2nd fortnight
+    isrMonthlyBase = 0
+    annualTaxable = 0
+    isrMonthly = 0
     isrRetained = 0
   } else if (quincena === 2) {
-    isrRetained = roundHalfUp(isrCalculated * 2)
+    // DR 2nd quincena: monthly base = net(1st fortnight) + net(2nd fortnight)
+    const firstGross = input.firstFortnightGross ?? earnings.grossPay
+    const firstNet = roundHalfUp(firstGross - tssForGross(firstGross))
+    isrMonthlyBase = roundHalfUp(firstNet + netThisPeriod)
+    annualTaxable = roundHalfUp(isrMonthlyBase * 12)
+    const annualTax = rules.calculateIncomeTax(annualTaxable)
+    isrMonthly = roundHalfUp(annualTax / 12)
+    isrRetained = isrMonthly
   } else {
-    isrRetained = isrCalculated
+    // US / other countries / weekly / no periodStart: per-period ISR, gross-annualized
+    annualTaxable = roundHalfUp(earnings.grossPay * rules.payPeriodsPerYear)
+    const annualTax = rules.calculateIncomeTax(annualTaxable)
+    isrRetained = roundHalfUp(annualTax / rules.payPeriodsPerYear)
+    isrMonthly = roundHalfUp(annualTax / 12)
+    isrMonthlyBase = earnings.grossPay
   }
+
+  // isrCalculated kept for compatibility: monthly ISR on DR quincena runs, per-period ISR otherwise
+  const isrCalculated = quincena !== null ? isrMonthly : isrRetained
+  const isrDeferred = quincena === 1
 
   const customDeds = calculateCustomDeductions(earnings.grossPay, input.customDeductions)
 
@@ -197,10 +264,12 @@ export function calculatePayroll(input: CalculationInput): CalculationResult {
     sfsBase,
     sfsAmount,
     tssTotal,
-    taxableIncome: annualGross,
+    taxableIncome: annualTaxable,
+    isrMonthlyBase,
     isrMonthly,
     isrCalculated,
     isrPeriod: isrRetained,
+    isrDeferred,
     customDeductionsBreakdown: customDeds.breakdown,
     customDeductions: customDeds.total,
     totalDeductions,
