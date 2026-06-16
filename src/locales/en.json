@@ -192,6 +192,7 @@
       "approve": "Approve & Send"
     },
     "noActiveEmployees": "No active employees found. Sync from BambooHR first.",
+    "noHourlyForCountry": "No hourly employees found for this country. {{count}} salaried employee(s) shown below for reference.",
     "hubstaffNotConnected": "Hubstaff not connected — hours will start at 0 for manual entry.",
     "period": {
       "title": "Pay Period",

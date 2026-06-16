@@ -35,10 +35,22 @@ interface SoloTarget {
 }
 
 function countryFlag(country: string): string {
-  const c = country.toLowerCase()
+  const c = country.toLowerCase().trim()
   if (c.includes('dominican')) return '🇩🇴'
   if (c.includes('united states') || c === 'us') return '🇺🇸'
-  return '🌐'
+  if (c.includes('jamaica')) return '🇯🇲'
+  if (c.includes('philippines') || c.includes('filipinas')) return '🇵🇭'
+  if (c.includes('kenya')) return '🇰🇪'
+  if (c.includes('mexico') || c.includes('méxico')) return '🇲🇽'
+  if (c.includes('haiti')) return '🇭🇹'
+  if (c.includes('puerto rico')) return '🇵🇷'
+  if (c.includes('canada')) return '🇨🇦'
+  if (c.includes('colombia')) return '🇨🇴'
+  if (c.includes('venezuela')) return '🇻🇪'
+  if (c.includes('panama') || c.includes('panamá')) return '🇵🇦'
+  if (c.includes('costa rica')) return '🇨🇷'
+  if (c.includes('cuba')) return '🇨🇺'
+  return '🌍'
 }
 
 export function StepHours({ employeeHours, startDate, endDate, frequency, country, onNext, onBack }: Props) {
@@ -50,8 +62,12 @@ export function StepHours({ employeeHours, startDate, endDate, frequency, countr
   const [soloTarget, setSoloTarget] = useState<SoloTarget | null>(null)
 
   const salariedEmployees = useMemo(
-    () => employees.filter((e) => e.status === 'Active' && e.payType !== 'Hourly'),
-    [employees],
+    () => employees.filter((e) => {
+      if (e.status !== 'Active' || e.payType === 'Hourly') return false
+      const empCountry = e.country && e.country.trim() ? e.country.trim() : 'Unknown'
+      return empCountry === country
+    }),
+    [employees, country],
   )
 
   const holidays = useMemo(
@@ -140,6 +156,13 @@ export function StepHours({ employeeHours, startDate, endDate, frequency, countr
               </span>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* No-hourly informational banner */}
+      {hours.length === 0 && salariedEmployees.length > 0 && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-700">
+          {t('payroll.noHourlyForCountry', { count: salariedEmployees.length })}
         </div>
       )}
 

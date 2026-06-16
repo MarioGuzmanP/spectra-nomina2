@@ -192,6 +192,7 @@
       "approve": "Aprobar y Enviar"
     },
     "noActiveEmployees": "No se encontraron empleados activos. Sincroniza desde BambooHR primero.",
+    "noHourlyForCountry": "No hay empleados por hora en este país. {{count}} empleado(s) asalariado(s) se muestran abajo como referencia.",
     "hubstaffNotConnected": "Hubstaff no conectado — las horas comenzarán en 0 para entrada manual.",
     "period": {
       "title": "Período de Pago",

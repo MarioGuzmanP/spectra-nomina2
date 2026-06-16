@@ -206,12 +206,9 @@ export function StepPeriod({ onNext }: Props) {
       return
     }
 
-    // Filter employees to the selected country
-    const allActiveHourly = employees.filter(
-      (e) => e.status === 'Active' && e.payType === 'Hourly',
-    )
-
-    const activeEmployees = allActiveHourly.filter((e) => {
+    // All active employees for the selected country (Hourly + Salary)
+    const activeEmployees = employees.filter((e) => {
+      if (e.status !== 'Active') return false
       const empCountry = e.country && e.country.trim() ? e.country.trim() : 'Unknown'
       return empCountry === selectedCountry
     })
@@ -220,6 +217,9 @@ export function StepPeriod({ onNext }: Props) {
       toast({ variant: 'destructive', title: t('payroll.noActiveEmployees') })
       return
     }
+
+    // Only hourly employees enter the hours review flow
+    const hourlyEmployees = activeEmployees.filter((e) => e.payType === 'Hourly')
 
     setLoading(true)
     let hoursMap: Record<string, { regular: number; ot: number; total: number }> = {}
@@ -288,7 +288,7 @@ export function StepPeriod({ onNext }: Props) {
           console.log(`[StepPeriod] profiles fetched: ${hubUsers.length}`, hubUsers.map(u => ({ id: u.id, name: u.name, email: u.email })))
         }
 
-        console.log('[StepPeriod] BambooHR hourly employees:', activeEmployees.map((e) => ({
+        console.log('[StepPeriod] BambooHR hourly employees:', hourlyEmployees.map((e) => ({
           name: `${e.firstName} ${e.lastName}`, email: e.workEmail,
         })))
         console.log('[StepPeriod] hoursMap user IDs:', Object.keys(hoursMap).length, 'hubUsers for matching:', hubUsers.length)
@@ -298,7 +298,7 @@ export function StepPeriod({ onNext }: Props) {
       }
     }
 
-    const employeeHours: EmployeeHoursEntry[] = activeEmployees.map((emp) => {
+    const employeeHours: EmployeeHoursEntry[] = hourlyEmployees.map((emp) => {
       const savedMapping = hubstaff.employeeMapping.find((m) => m.bambooEmployeeId === emp.id)
       let hubstaffUserId: string | undefined = savedMapping?.hubstaffUserId || undefined
       let hubstaffData = hubstaffUserId ? hoursMap[hubstaffUserId] : undefined
