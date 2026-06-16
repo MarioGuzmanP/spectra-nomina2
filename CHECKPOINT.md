@@ -3,7 +3,7 @@
 **Last updated:** 2026-06-15  
 **Current Phase:** SYSTEM COMPLETE — UX improvements  
 **Git branch:** main  
-**Last commit:** feat: three UX improvements to Process Payroll step 2 (98f2a8a1)
+**Last commit:** feat: biweekly quincena picker + ISO week OT calculation (30536fce)
 
 ---
 
@@ -32,7 +32,16 @@ All phases (1–9) implemented and verified.
 
 ---
 
-## UX Improvements (2026-06-15)
+## UX Improvements — Step 1 (2026-06-15)
+
+| Improvement | Files |
+|-------------|-------|
+| MEJORA 1: Biweekly quincena picker — when frequency is Bi-weekly, replaces free date inputs with month+year selects + two quincena radio buttons (1st: 1–15, 2nd: 16–last day). Dates auto-computed, read-only. February leap year handled correctly. Weekly keeps free inputs. | `src/pages/Payroll/components/StepPeriod.tsx`, `src/locales/en.json`, `src/locales/es.json` |
+| MEJORA 2: ISO week OT calculation — `groupDailyIntoWeeks` replaced with ISO week (Mon–Sun) bucketing. Iterates every day in period, groups by ISO week Monday, applies OT threshold per week. Fixes bug where 15-day biweekly periods missed the 15th day (2×7=14 days). OT threshold reads from settings (default 40 h). | `src/lib/connectors/hubstaff.ts` |
+
+---
+
+## UX Improvements — Step 2 (2026-06-15)
 
 | Improvement | Files |
 |-------------|-------|
