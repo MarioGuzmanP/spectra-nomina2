@@ -27,9 +27,10 @@ async function buildStubElement(
   startDate: string,
   endDate: string,
   lang: EmailTemplate['payStubLanguage'],
+  country?: string,
 ) {
   const PayStubDocument = await loadPayStub()
-  return React.createElement(PayStubDocument, { entry, company, startDate, endDate, lang })
+  return React.createElement(PayStubDocument, { entry, company, startDate, endDate, lang, country })
 }
 
 function statusVariant(status: PayrollPeriod['status']): 'default' | 'secondary' | 'info' | 'warning' {
@@ -67,11 +68,13 @@ function PayrollRow({ payroll }: { payroll: PayrollPeriod }) {
         payroll.startDate,
         payroll.endDate,
         emailTemplate.payStubLanguage,
+        payroll.country,
       )
       const blob = await generatePdfBlob(element)
       const fname = `Paystub_${entry.employee.firstName}_${entry.employee.lastName}_${payroll.startDate}_${payroll.endDate}.pdf`
       downloadBlob(blob, fname)
-    } catch {
+    } catch (err) {
+      console.error('[PDF] Download paystub failed:', err)
       toast({ variant: 'destructive', title: t('errors.pdfFailed') })
     }
   }
@@ -148,6 +151,7 @@ function PayrollRow({ payroll }: { payroll: PayrollPeriod }) {
           payroll.startDate,
           payroll.endDate,
           emailTemplate.payStubLanguage,
+          payroll.country,
         )
         const blob = await generatePdfBlob(element)
         const pdfBase64 = await blobToBase64(blob)
@@ -202,6 +206,7 @@ function PayrollRow({ payroll }: { payroll: PayrollPeriod }) {
           payroll.startDate,
           payroll.endDate,
           emailTemplate.payStubLanguage,
+          payroll.country,
         )
         const blob = await generatePdfBlob(element)
         const fname = `Paystub_${entry.employee.firstName}_${entry.employee.lastName}_${payroll.startDate}_${payroll.endDate}.pdf`
@@ -252,12 +257,7 @@ function PayrollRow({ payroll }: { payroll: PayrollPeriod }) {
           >
             {expanded ? <ChevronDown className="h-4 w-4 text-gray-400" /> : <ChevronRight className="h-4 w-4 text-gray-400" />}
             <span className="text-base leading-none" title={payroll.country || 'Unknown'}>
-              {(() => {
-                const c = (payroll.country ?? '').toLowerCase()
-                if (c.includes('dominican')) return '🇩🇴'
-                if (c.includes('united states') || c === 'us') return '🇺🇸'
-                return '🌐'
-              })()}
+              {countryFlag(payroll.country)}
             </span>
             {formatDate(payroll.startDate)} – {formatDate(payroll.endDate)}
           </button>
@@ -363,9 +363,19 @@ function PayrollRow({ payroll }: { payroll: PayrollPeriod }) {
 }
 
 function countryFlag(country: string | undefined): string {
-  const c = (country ?? '').toLowerCase()
+  const c = (country ?? '').toLowerCase().trim()
   if (c.includes('dominican')) return '🇩🇴'
   if (c.includes('united states') || c === 'us') return '🇺🇸'
+  if (c.includes('jamaica')) return '🇯🇲'
+  if (c.includes('haiti')) return '🇭🇹'
+  if (c.includes('puerto rico')) return '🇵🇷'
+  if (c.includes('canada')) return '🇨🇦'
+  if (c.includes('mexico') || c.includes('méxico')) return '🇲🇽'
+  if (c.includes('colombia')) return '🇨🇴'
+  if (c.includes('venezuela')) return '🇻🇪'
+  if (c.includes('panama') || c.includes('panamá')) return '🇵🇦'
+  if (c.includes('costa rica')) return '🇨🇷'
+  if (c.includes('cuba')) return '🇨🇺'
   return '🌐'
 }
 

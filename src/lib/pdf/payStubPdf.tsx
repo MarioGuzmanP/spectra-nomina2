@@ -352,7 +352,7 @@ export function PayStubDocument({
           <View style={S.tRow}>
             <Text style={[S.dedLabel, { flex: dD }]}>{countryL.sfs}</Text>
             <Text style={[S.dedRate, { flex: dR, textAlign: 'center' }]}>{isUS ? '1.45%' : '3.04%'}</Text>
-            <Text style={[S.dedArrow, { flex: dArr, textAlign: 'center' }]}>►</Text>
+            <Text style={[S.dedArrow, { flex: dArr, textAlign: 'center' }]}>{'>'}</Text>
             <Text style={[S.dedAmount, { flex: dA, textAlign: 'right' }]}>{fmt(c.sfsAmount)}</Text>
           </View>
 
@@ -360,7 +360,7 @@ export function PayStubDocument({
           <View style={S.tRow}>
             <Text style={[S.dedLabel, { flex: dD }]}>{countryL.afp}</Text>
             <Text style={[S.dedRate, { flex: dR, textAlign: 'center' }]}>{isUS ? '6.2%' : '2.87%'}</Text>
-            <Text style={[S.dedArrow, { flex: dArr, textAlign: 'center' }]}>►</Text>
+            <Text style={[S.dedArrow, { flex: dArr, textAlign: 'center' }]}>{'>'}</Text>
             <Text style={[S.dedAmount, { flex: dA, textAlign: 'right' }]}>{fmt(c.afpAmount)}</Text>
           </View>
 
@@ -368,7 +368,7 @@ export function PayStubDocument({
           <View style={S.tRow}>
             <Text style={[S.dedLabel, { flex: dD }]}>{l.payAdvance}</Text>
             <Text style={[S.dedRate, { flex: dR }]}> </Text>
-            <Text style={[S.dedArrow, { flex: dArr, textAlign: 'center' }]}>►</Text>
+            <Text style={[S.dedArrow, { flex: dArr, textAlign: 'center' }]}>{'>'}</Text>
             <Text style={[S.dedAmount, { flex: dA, textAlign: 'right' }]}>{fmt(payAdvanceAmt)}</Text>
           </View>
 
@@ -376,7 +376,7 @@ export function PayStubDocument({
           <View style={S.tRow}>
             <Text style={[S.dedLabel, { flex: dD }]}>{l.dependentTSS}</Text>
             <Text style={[S.dedRate, { flex: dR }]}> </Text>
-            <Text style={[S.dedArrow, { flex: dArr, textAlign: 'center' }]}>►</Text>
+            <Text style={[S.dedArrow, { flex: dArr, textAlign: 'center' }]}>{'>'}</Text>
             <Text style={[S.dedAmount, { flex: dA, textAlign: 'right' }]}>{fmt(dependentTSSAmt)}</Text>
           </View>
 
@@ -387,7 +387,7 @@ export function PayStubDocument({
               <View style={S.tRow}>
                 <Text style={[S.dedLabel, { flex: dD }]}>{countryL.isr}</Text>
                 <Text style={[S.dedRate, { flex: dR }]}> </Text>
-                <Text style={[S.dedArrow, { flex: dArr, textAlign: 'center' }]}>►</Text>
+                <Text style={[S.dedArrow, { flex: dArr, textAlign: 'center' }]}>{'>'}</Text>
                 <Text style={[S.dedAmount, { flex: dA, textAlign: 'right' }]}>{fmt(0)}</Text>
               </View>
               <View style={[S.tRow, { backgroundColor: '#FFFBEB' }]}>
@@ -403,19 +403,19 @@ export function PayStubDocument({
               <View style={S.tRow}>
                 <Text style={[S.dedLabel, { flex: dD }]}>{l.isr1st}</Text>
                 <Text style={[S.dedRate, { flex: dR }]}> </Text>
-                <Text style={[S.dedArrow, { flex: dArr, textAlign: 'center' }]}>►</Text>
+                <Text style={[S.dedArrow, { flex: dArr, textAlign: 'center' }]}>{'>'}</Text>
                 <Text style={[S.dedAmount, { flex: dA, textAlign: 'right' }]}>{fmt(isrFromPrev)}</Text>
               </View>
               <View style={S.tRow}>
                 <Text style={[S.dedLabel, { flex: dD }]}>{l.isr2nd}</Text>
                 <Text style={[S.dedRate, { flex: dR }]}> </Text>
-                <Text style={[S.dedArrow, { flex: dArr, textAlign: 'center' }]}>►</Text>
+                <Text style={[S.dedArrow, { flex: dArr, textAlign: 'center' }]}>{'>'}</Text>
                 <Text style={[S.dedAmount, { flex: dA, textAlign: 'right' }]}>{fmt(c.isrCalculated)}</Text>
               </View>
               <View style={[S.tRow, { backgroundColor: '#FEF2F2' }]}>
                 <Text style={[S.dedLabel, { flex: dD, fontFamily: 'Helvetica-Bold', color: RED }]}>{l.isrTotalRetained}</Text>
                 <Text style={[S.dedRate, { flex: dR }]}> </Text>
-                <Text style={[S.dedArrow, { flex: dArr, textAlign: 'center' }]}>►</Text>
+                <Text style={[S.dedArrow, { flex: dArr, textAlign: 'center' }]}>{'>'}</Text>
                 <Text style={[S.dedAmount, { flex: dA, textAlign: 'right', fontSize: 9 }]}>{fmt(c.isrPeriod)}</Text>
               </View>
             </>
@@ -424,7 +424,7 @@ export function PayStubDocument({
             <View style={S.tRow}>
               <Text style={[S.dedLabel, { flex: dD }]}>{countryL.isr}</Text>
               <Text style={[S.dedRate, { flex: dR }]}> </Text>
-              <Text style={[S.dedArrow, { flex: dArr, textAlign: 'center' }]}>►</Text>
+              <Text style={[S.dedArrow, { flex: dArr, textAlign: 'center' }]}>{'>'}</Text>
               <Text style={[S.dedAmount, { flex: dA, textAlign: 'right' }]}>{fmt(c.isrPeriod)}</Text>
             </View>
           )}
@@ -433,7 +433,7 @@ export function PayStubDocument({
           <View style={[S.tRow, { backgroundColor: GRAY_50 }]}>
             <Text style={[S.dedLabel, { flex: dD, color: GRAY_500 }]}>{l.isrSalary}</Text>
             <Text style={[S.dedRate, { flex: dR }]}> </Text>
-            <Text style={[S.dedArrow, { flex: dArr, textAlign: 'center' }]}>►</Text>
+            <Text style={[S.dedArrow, { flex: dArr, textAlign: 'center' }]}>{'>'}</Text>
             <Text style={[S.dedAmountNeutral, { flex: dA, textAlign: 'right' }]}>{fmt(isrSalaryDisplay)}</Text>
           </View>
 
@@ -441,7 +441,7 @@ export function PayStubDocument({
           <View style={S.tRow}>
             <Text style={[S.dedLabel, { flex: dD }]}>{l.complementaryIns}</Text>
             <Text style={[S.dedRate, { flex: dR }]}> </Text>
-            <Text style={[S.dedArrow, { flex: dArr, textAlign: 'center' }]}>►</Text>
+            <Text style={[S.dedArrow, { flex: dArr, textAlign: 'center' }]}>{'>'}</Text>
             <Text style={[S.dedAmount, { flex: dA, textAlign: 'right' }]}>{fmt(complementaryAmt)}</Text>
           </View>
 
@@ -450,7 +450,7 @@ export function PayStubDocument({
             <View key={d.name} style={S.tRow}>
               <Text style={[S.dedLabel, { flex: dD }]}>{d.name}</Text>
               <Text style={[S.dedRate, { flex: dR }]}> </Text>
-              <Text style={[S.dedArrow, { flex: dArr, textAlign: 'center' }]}>►</Text>
+              <Text style={[S.dedArrow, { flex: dArr, textAlign: 'center' }]}>{'>'}</Text>
               <Text style={[S.dedAmount, { flex: dA, textAlign: 'right' }]}>{fmt(d.amount)}</Text>
             </View>
           ))}

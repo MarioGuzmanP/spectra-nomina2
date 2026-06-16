@@ -264,7 +264,8 @@
       "salariedError": "Cannot calculate — the following employees are salaried and cannot be processed in hourly payroll:",
       "salariedErrorNote": "Go back and remove salaried employees from the hours list.",
       "quincena1Notice": "1st Fortnight — ISR is calculated but NOT retained this period. It will be charged together with the 2nd fortnight ISR.",
-      "quincena2Notice": "2nd Fortnight — ISR for both fortnights (1st + 2nd) will be retained in this period."
+      "quincena2Notice": "2nd Fortnight — ISR for both fortnights (1st + 2nd) will be retained in this period.",
+      "genericCountryNotice": "Tax rules not configured for {{country}}. Only gross pay will be calculated — no statutory deductions applied."
     },
     "approve": {
       "title": "Approve Payroll",

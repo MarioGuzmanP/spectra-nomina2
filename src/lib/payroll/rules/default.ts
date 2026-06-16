@@ -1,0 +1,25 @@
+import type { PayrollRules } from './types'
+
+export function getDefaultPayrollRules(
+  country: string,
+  frequency: 'biweekly' | 'weekly',
+): PayrollRules {
+  const payPeriodsPerYear = frequency === 'weekly' ? 52 : 24
+  return {
+    country,
+    currency: 'USD',
+    currencySymbol: '$',
+    healthInsuranceRate: 0,
+    pensionRate: 0,
+    healthInsuranceName: 'Health Insurance',
+    pensionName: 'Pension',
+    healthInsuranceCap: null,
+    pensionCap: null,
+    calculateIncomeTax: () => 0,
+    incomeTaxName: 'Income Tax',
+    payPeriodsPerYear,
+    otThresholdHours: 40,
+    holidays: [],
+    dailyDivisor: 23.83,
+  }
+}

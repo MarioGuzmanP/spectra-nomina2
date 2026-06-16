@@ -11,7 +11,12 @@ async function getPdfRenderer() {
 
 export async function generatePdfBlob(element: ReactElement): Promise<Blob> {
   const { pdf } = await getPdfRenderer()
-  return await pdf(element).toBlob()
+  try {
+    return await pdf(element).toBlob()
+  } catch (err) {
+    console.error('[PDF] generatePdfBlob failed:', err)
+    throw err
+  }
 }
 
 export function downloadBlob(blob: Blob, filename: string): void {

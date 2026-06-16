@@ -1,9 +1,9 @@
 # CHECKPOINT.md — Spectra Payroll System
 
-**Last updated:** 2026-06-15  
-**Current Phase:** SYSTEM COMPLETE — UX improvements  
+**Last updated:** 2026-06-16  
+**Current Phase:** SYSTEM COMPLETE — bug fixes  
 **Git branch:** main  
-**Last commit:** feat: country-separated payroll (DR + US) — Opción A (5af8b5f2)
+**Last commit:** fix: PDF ► character crash, Jamaica flag, country filter dep array
 
 ---
 
@@ -29,6 +29,16 @@ All phases (1–9) implemented and verified.
 | 7 | Full settings (company/logo/payroll/fiscal params/email template) | ✅ |
 | 8 | Dashboard with AreaChart + history with expandable rows | ✅ |
 | 9 | QA pass: i18n completeness, bundle splitting, bug fixes | ✅ |
+
+---
+
+## Bug Fixes (2026-06-16)
+
+| Bug | Root Cause | Fix | Files |
+|-----|-----------|-----|-------|
+| **BUG 1: Failed to generate PDF** | `►` (U+25BA) outside Helvetica's Windows-1252 encoding — PDF renderer throws on unsupported glyph | Replaced all `►` with `>` (ASCII). Added `console.error` logging in `generatePdfBlob` and `handleDownloadPdf`. Added `country` param to `buildStubElement` in History so paystub uses correct currency. | `payStubPdf.tsx`, `generatePdf.ts`, `History/index.tsx` |
+| **BUG 2: Country selector / Jamaica flag** | Only DR and US had flag emoji; Jamaica got 🌐. Jamaica employees incorrectly ran DR tax rules. | Added 🇯🇲 + 10 more common flags to all `countryFlag` helpers. New `default.ts` rules module returns 0 deductions for unknown countries. `getPayrollRules` dispatches to default for non-DR/non-US/non-Unknown. Warning banner in `StepCalculate` when generic rules apply. New i18n key `payroll.calculate.genericCountryNotice`. | `rules/default.ts`, `rules/index.ts`, `StepPeriod.tsx`, `Employees/index.tsx`, `History/index.tsx`, `StepCalculate.tsx`, `en.json`, `es.json` |
+| **BUG 3: Country filter in Employees not working** | `countryFilter` was missing from `filtered` useMemo dependency array — React never re-ran the filter when country selection changed | Added `countryFilter` to the dep array | `Employees/index.tsx` line 138 |
 
 ---
 

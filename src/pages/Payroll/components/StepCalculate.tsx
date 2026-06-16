@@ -40,6 +40,8 @@ export function StepCalculate({ employeeHours, startDate, endDate: _endDate, fre
 
   // For UI banners only — actual quincena logic is inside calculatePayroll
   const isDR = rules.country.toLowerCase().includes('dominican')
+  const isUS = rules.country.toLowerCase().includes('united states') || rules.country.toLowerCase() === 'us'
+  const isGenericCountry = !isDR && !isUS && rules.country !== 'Unknown' && rules.country !== ''
   const firstQuincena = isDR && frequency === 'biweekly' && isFirstQuincena(startDate)
 
   const salariedSlipthrough = useMemo(() =>
@@ -119,6 +121,13 @@ export function StepCalculate({ employeeHours, startDate, endDate: _endDate, fre
     <div className="space-y-4">
       {/* Top action buttons */}
       <ActionButtons />
+
+      {/* Generic country notice — no tax rules configured */}
+      {isGenericCountry && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-700">
+          {t('payroll.calculate.genericCountryNotice', { country: rules.country })}
+        </div>
+      )}
 
       {/* Quincena ISR notice — only for DR */}
       {isDR && frequency === 'biweekly' && firstQuincena && (

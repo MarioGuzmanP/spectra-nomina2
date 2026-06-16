@@ -72,9 +72,19 @@ function toISODate(year: number, month: number, day: number): string {
 }
 
 function countryFlag(country: string): string {
-  const c = country.toLowerCase()
+  const c = country.toLowerCase().trim()
   if (c.includes('dominican')) return '🇩🇴'
   if (c.includes('united states') || c === 'us') return '🇺🇸'
+  if (c.includes('jamaica')) return '🇯🇲'
+  if (c.includes('haiti')) return '🇭🇹'
+  if (c.includes('puerto rico')) return '🇵🇷'
+  if (c.includes('canada')) return '🇨🇦'
+  if (c.includes('mexico') || c.includes('méxico')) return '🇲🇽'
+  if (c.includes('colombia')) return '🇨🇴'
+  if (c.includes('venezuela')) return '🇻🇪'
+  if (c.includes('panama') || c.includes('panamá')) return '🇵🇦'
+  if (c.includes('costa rica')) return '🇨🇷'
+  if (c.includes('cuba')) return '🇨🇺'
   return '🌐'
 }
 

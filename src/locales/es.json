@@ -264,7 +264,8 @@
       "salariedError": "No se puede calcular — los siguientes empleados son asalariados y no pueden procesarse en nómina por hora:",
       "salariedErrorNote": "Regresa y elimina los empleados asalariados de la lista de horas.",
       "quincena1Notice": "1ra Quincena — El ISR se calcula pero NO se retiene en este período. Se cobrará junto al ISR de la 2da quincena.",
-      "quincena2Notice": "2da Quincena — Se retendrá el ISR de ambas quincenas (1ra + 2da) en este período."
+      "quincena2Notice": "2da Quincena — Se retendrá el ISR de ambas quincenas (1ra + 2da) en este período.",
+      "genericCountryNotice": "Reglas fiscales no configuradas para {{country}}. Solo se calculará el salario bruto — sin deducciones legales aplicadas."
     },
     "approve": {
       "title": "Aprobar Nómina",
