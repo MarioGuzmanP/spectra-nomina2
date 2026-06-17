@@ -24,6 +24,7 @@ import { useBankAccountsStore, RD_BANKS } from '@/store/bankAccountsStore'
 import { toast } from '@/hooks/useToast'
 import { formatCurrency, formatDate, getInitials } from '@/lib/utils'
 import { PAYMENT_METHOD_LABELS } from '@/lib/pdf/paystubLabels'
+import { VacationInfoSection } from './VacationInfoSection'
 import type { CustomDeduction, PaymentMethod } from '@/types'
 
 const BANK_FIELD_LABELS = {
@@ -369,12 +370,8 @@ export default function EmployeeProfile() {
         </CardContent>
       </Card>
 
-      {/* Vacation placeholder */}
-      <Card className="border-dashed border-gray-200 bg-gray-50">
-        <CardContent className="p-4">
-          <p className="text-sm text-gray-400">{t('employees.profile.vacationInfo')}</p>
-        </CardContent>
-      </Card>
+      {/* Vacation info (BambooHR) */}
+      <VacationInfoSection employee={employee} />
 
       {/* Deduction dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

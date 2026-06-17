@@ -83,6 +83,17 @@ export function saveVacationRules(country: string, rules: VacationRules): Vacati
   return saved
 }
 
+/** Completed years of service from a hire date (YYYY-MM-DD). */
+export function yearsOfService(hireDate: string, asOf: Date = new Date()): number {
+  if (!hireDate) return 0
+  const start = new Date(hireDate + 'T00:00:00')
+  if (isNaN(start.getTime())) return 0
+  let years = asOf.getFullYear() - start.getFullYear()
+  const monthDiff = asOf.getMonth() - start.getMonth()
+  if (monthDiff < 0 || (monthDiff === 0 && asOf.getDate() < start.getDate())) years--
+  return Math.max(0, years)
+}
+
 /** Vacation days for a given seniority, from the rule's tiers (0 if none match). */
 export function getVacationDays(tiers: SeniorityTier[], yearsOfService: number): number {
   const tier = tiers.find((tr) => yearsOfService >= tr.minYears && (tr.maxYears === null || yearsOfService <= tr.maxYears))
@@ -109,17 +120,20 @@ export interface VacationPayResult {
  * SFS/AFP are deducted when toggled (rates from fiscal params, DR defaults otherwise).
  * Returns null when the country has no configured rules.
  */
-export function calculateVacationPay(
+/**
+ * Vacation pay for an explicit number of days (e.g. the real days taken, summed from
+ * BambooHR's `dates` object). Reads the formula + deduction toggles from storage.
+ */
+export function calculateVacationPayForDays(
   country: string,
   hourlyRate: number,
-  yearsOfService: number,
+  days: number,
   rates: { sfsRate?: number; afpRate?: number } = {},
 ): VacationPayResult | null {
   const rules = getVacationRules(country)
   if (!rules) return null
 
   const { hoursPerWeek, weeksPerYear, monthsPerYear, dailyDivisor } = rules.formula
-  const days = getVacationDays(rules.tiers, yearsOfService)
   const averageMonthlySalary = roundHalfUp((hourlyRate * hoursPerWeek * weeksPerYear) / (monthsPerYear || 1))
   const dailySalary = roundHalfUp(averageMonthlySalary / (dailyDivisor || 1))
   const gross = roundHalfUp(dailySalary * days)
@@ -131,4 +145,21 @@ export function calculateVacationPay(
   const net = roundHalfUp(gross - sfsAmount - afpAmount)
 
   return { days, averageMonthlySalary, dailySalary, gross, sfsAmount, afpAmount, isrApplies: rules.deductions.isr, net }
+}
+
+/**
+ * Vacation pay for an employee, using the seniority-tier entitlement (days from years of
+ * service) and the parameters stored in 'vacation_rules' for their country (NOT hardcoded).
+ * Returns null when the country has no configured rules.
+ */
+export function calculateVacationPay(
+  country: string,
+  hourlyRate: number,
+  yearsOfService: number,
+  rates: { sfsRate?: number; afpRate?: number } = {},
+): VacationPayResult | null {
+  const rules = getVacationRules(country)
+  if (!rules) return null
+  const days = getVacationDays(rules.tiers, yearsOfService)
+  return calculateVacationPayForDays(country, hourlyRate, days, rates)
 }

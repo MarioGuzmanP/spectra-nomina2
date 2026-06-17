@@ -165,7 +165,22 @@
       "jobTitle": "Job Title",
       "payRate": "Pay Rate (RD$/hr)",
       "paymentMethod": "Payment Method",
-      "vacationInfo": "Vacation (coming soon)"
+      "vacationInfo": "Vacation Info"
+    },
+    "vacation": {
+      "title": "Vacation Info",
+      "notConfigured": "Vacation rules not yet configured for {{country}}.",
+      "notConnected": "Connect BambooHR in Settings → Connectors to load vacations.",
+      "loading": "Loading vacations…",
+      "fetchError": "Could not load vacations from BambooHR.",
+      "yearsOfService": "Years of service",
+      "entitledDays": "Vacation days entitled",
+      "estimatedPay": "Estimated vacation pay",
+      "periods": "Approved vacations ({{year}})",
+      "noPeriods": "No approved vacations for {{year}}.",
+      "days": "{{count}} days",
+      "generateReceipt": "Generate Vacation Receipt",
+      "receipt": "Receipt"
     },
     "deductions": {
       "addDeduction": "Add Deduction",

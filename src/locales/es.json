@@ -165,7 +165,22 @@
       "jobTitle": "Cargo",
       "payRate": "Tarifa (RD$/hr)",
       "paymentMethod": "Método de Pago",
-      "vacationInfo": "Vacaciones (próximamente)"
+      "vacationInfo": "Información de Vacaciones"
+    },
+    "vacation": {
+      "title": "Información de Vacaciones",
+      "notConfigured": "Las reglas de vacaciones aún no están configuradas para {{country}}.",
+      "notConnected": "Conecta BambooHR en Configuración → Conectores para cargar las vacaciones.",
+      "loading": "Cargando vacaciones…",
+      "fetchError": "No se pudieron cargar las vacaciones de BambooHR.",
+      "yearsOfService": "Años de servicio",
+      "entitledDays": "Días de vacaciones (derecho)",
+      "estimatedPay": "Pago de vacaciones estimado",
+      "periods": "Vacaciones aprobadas ({{year}})",
+      "noPeriods": "Sin vacaciones aprobadas para {{year}}.",
+      "days": "{{count}} días",
+      "generateReceipt": "Generar Recibo de Vacaciones",
+      "receipt": "Recibo"
     },
     "deductions": {
       "addDeduction": "Agregar deducción",

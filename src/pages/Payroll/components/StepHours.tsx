@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Clock, Pencil, CheckCircle2, AlertTriangle, MapPin, CalendarDays, Calculator, Search, Banknote, Landmark, ScrollText } from 'lucide-react'
+import { Clock, Pencil, CheckCircle2, AlertTriangle, MapPin, CalendarDays, Calculator, Search, Banknote, Landmark, ScrollText, Palmtree } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -9,9 +9,13 @@ import { Badge } from '@/components/ui/badge'
 import { useEmployeesStore } from '@/store/employeesStore'
 import { usePaymentMethodsStore } from '@/store/paymentMethodsStore'
 import { useBankAccountsStore } from '@/store/bankAccountsStore'
-import { formatCurrency, getInitials, maskAccount } from '@/lib/utils'
-import { roundHalfUp } from '@/lib/payroll/calculations'
+import { useSettingsStore } from '@/store/settingsStore'
+import { formatCurrency, formatDate, getInitials, maskAccount } from '@/lib/utils'
+import { roundHalfUp, formatCurrencyWithSymbol } from '@/lib/payroll/calculations'
+import { getCurrencySymbol } from '@/lib/payroll/rules'
 import { getHolidaysInRange } from '@/lib/holidays'
+import { calculateVacationPayForDays } from '@/lib/vacations'
+import { fetchVacations, getVacationsForEmployee, getVacationsOverlappingPeriod, countVacationDays, type VacationRequest } from '@/lib/connectors/bamboohr-vacations'
 import { PAYMENT_METHOD_LABELS } from '@/lib/pdf/paystubLabels'
 import { SinglePaystubModal } from './SinglePaystubModal'
 import type { EmployeeHoursEntry, Employee, PaymentMethod } from '@/types'
@@ -67,7 +71,32 @@ export function StepHours({ employeeHours, startDate, endDate, frequency, countr
   const employees = useEmployeesStore((s) => s.employees)
   const paymentMethods = usePaymentMethodsStore((s) => s.methods)
   const bankAccounts = useBankAccountsStore((s) => s.accounts)
+  const bamboo = useSettingsStore((s) => s.bamboohr)
   const uiLang = i18n.language?.startsWith('es') ? 'es' : 'en'
+
+  // Approved vacations for the pay-period year (for the 🌴 overlap badge).
+  const [vacations, setVacations] = useState<VacationRequest[]>([])
+  useEffect(() => {
+    if (!bamboo.connected || !bamboo.subdomain || !bamboo.apiKey || !startDate) return
+    let cancelled = false
+    fetchVacations(bamboo.subdomain, bamboo.apiKey, Number(startDate.slice(0, 4)))
+      .then((all) => { if (!cancelled) setVacations(all) })
+      .catch(() => { if (!cancelled) setVacations([]) })
+    return () => { cancelled = true }
+  }, [bamboo.connected, bamboo.subdomain, bamboo.apiKey, startDate])
+
+  // Vacation overlap + tooltip (dates + computed pay) for an employee in this period.
+  const vacationInfo = (emp: Employee): string | null => {
+    const overlapping = getVacationsOverlappingPeriod(getVacationsForEmployee(emp.id, vacations), startDate, endDate)
+    if (overlapping.length === 0) return null
+    const sym = getCurrencySymbol(country)
+    return overlapping.map((v) => {
+      const days = countVacationDays(v.dates)
+      const pay = calculateVacationPayForDays(country, emp.payRate, days)
+      const payStr = pay ? ` · ${formatCurrencyWithSymbol(pay.gross, sym)}` : ''
+      return `${formatDate(v.start)} → ${formatDate(v.end)} · ${days}d${payStr}`
+    }).join('\n')
+  }
   const [hours, setHours] = useState<EmployeeHoursEntry[]>(employeeHours)
   const [filter, setFilter] = useState<Filter>('all')
   const [search, setSearch] = useState('')
@@ -317,6 +346,18 @@ export function StepHours({ employeeHours, startDate, endDate, frequency, countr
                                       className="inline-flex shrink-0 items-center text-gray-400"
                                     >
                                       <Icon className="h-3 w-3" />
+                                    </span>
+                                  )
+                                })()}
+                                {(() => {
+                                  const info = vacationInfo(emp)
+                                  if (!info) return null
+                                  return (
+                                    <span
+                                      title={info}
+                                      className="inline-flex shrink-0 items-center text-emerald-600"
+                                    >
+                                      <Palmtree className="h-3 w-3" />
                                     </span>
                                   )
                                 })()}

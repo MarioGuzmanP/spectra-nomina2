@@ -57,6 +57,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const data: unknown = await response.json()
+
+    // Vacation proxy: GET /v1/time_off/requests returns ALL approved time-off types.
+    // Filter to Vacation (type.id === 83) so callers receive vacations only.
+    if (path.includes('time_off/requests') && Array.isArray(data)) {
+      const vacations = (data as Array<{ type?: { id?: string | number } }>)
+        .filter((r) => String(r.type?.id) === '83')
+      res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate')
+      return res.status(200).json(vacations)
+    }
+
     res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate')
     return res.status(200).json(data)
   } catch (err) {
