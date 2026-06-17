@@ -10,10 +10,10 @@
     "comingSoonText": "This module is under development. Coming soon.",
     "backToSuite": "Back to Spectra Suite",
     "modules": {
-      "nomina": "Nómina",
-      "rrhh": "Recursos Humanos",
-      "facturacion": "Facturación",
-      "gastos": "Gastos"
+      "nomina": "Payroll",
+      "rrhh": "Human Resources",
+      "facturacion": "Billing",
+      "gastos": "Expenses"
     },
     "nav": {
       "employees": "Employees",
