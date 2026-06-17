@@ -4,7 +4,9 @@
     "subtitle": "Selecciona un módulo para comenzar",
     "active": "Activo",
     "comingSoon": "Próximamente",
+    "inDevelopment": "En Desarrollo",
     "back": "Spectra Suite",
+    "underDevelopment": "Este módulo está en desarrollo.",
     "comingSoonText": "Este módulo está en desarrollo. Próximamente disponible.",
     "backToSuite": "Volver a Spectra Suite",
     "modules": {
@@ -12,6 +14,22 @@
       "rrhh": "Recursos Humanos",
       "facturacion": "Facturación",
       "gastos": "Gastos"
+    },
+    "nav": {
+      "employees": "Empleados",
+      "departments": "Departamentos",
+      "positions": "Cargos",
+      "attendance": "Asistencia",
+      "reports": "Reportes",
+      "settings": "Configuración",
+      "invoices": "Facturas",
+      "clients": "Clientes",
+      "products": "Productos y Servicios",
+      "payments": "Pagos",
+      "expenses": "Gastos",
+      "categories": "Categorías",
+      "suppliers": "Proveedores",
+      "approvals": "Aprobaciones"
     }
   },
   "nav": {

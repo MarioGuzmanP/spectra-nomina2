@@ -31,15 +31,31 @@ export function ModuleShell({ moduleId }: { moduleId: SuiteModuleId }) {
           <span className="text-xl leading-none">{mod.icon}</span>
           <span className="text-sm font-bold uppercase tracking-wide text-gray-900">{name}</span>
         </div>
-        <nav className="flex-1 p-3" />
+        {/* Visual-only nav — no routes behind these yet */}
+        <nav className="flex-1 space-y-1 p-3">
+          {mod.navItems.map((item) => (
+            <button
+              key={item.labelKey}
+              type="button"
+              disabled
+              className="flex w-full cursor-default items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-400"
+            >
+              <span className="w-4 text-center text-sm leading-none">{item.icon}</span>
+              {t(item.labelKey)}
+            </button>
+          ))}
+        </nav>
       </aside>
 
       {/* Coming Soon content */}
-      <main className="flex flex-1 flex-col items-center justify-center gap-4 overflow-auto p-6 text-center">
+      <main className="flex flex-1 flex-col items-center justify-center gap-3 overflow-auto p-6 text-center">
         <span className="text-6xl leading-none">{mod.icon}</span>
         <h1 className="text-2xl font-bold text-gray-900">{name}</h1>
-        <p className="max-w-sm text-sm text-gray-500">{t('suite.comingSoonText')}</p>
-        <Button variant="outline" asChild>
+        <p className="max-w-sm text-sm text-gray-500">{t('suite.underDevelopment')}</p>
+        <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-500">
+          {t('suite.comingSoon')}
+        </span>
+        <Button variant="outline" asChild className="mt-2">
           <Link to="/suite">
             <ArrowLeft className="mr-1.5 h-4 w-4" /> {t('suite.backToSuite')}
           </Link>
