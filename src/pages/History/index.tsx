@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { usePayrollStore } from '@/store/payrollStore'
 import { useSettingsStore } from '@/store/settingsStore'
 import { usePaymentMethodsStore } from '@/store/paymentMethodsStore'
+import { useBankAccountsStore } from '@/store/bankAccountsStore'
 import { toast } from '@/hooks/useToast'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { generatePdfBlob, downloadBlob, blobToBase64 } from '@/lib/pdf/generatePdf'
@@ -32,7 +33,8 @@ async function buildStubElement(
 ) {
   const PayStubDocument = await loadPayStub()
   const paymentMethod = usePaymentMethodsStore.getState().getMethod(entry.employee.id)
-  return React.createElement(PayStubDocument, { entry, company, startDate, endDate, lang, country, paymentMethod })
+  const bankAccount = useBankAccountsStore.getState().getAccount(entry.employee.id)
+  return React.createElement(PayStubDocument, { entry, company, startDate, endDate, lang, country, paymentMethod, bankAccount })
 }
 
 function statusVariant(status: PayrollPeriod['status']): 'default' | 'secondary' | 'info' | 'warning' {

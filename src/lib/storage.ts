@@ -47,6 +47,9 @@ export const STORAGE_KEYS = {
   EMAIL_TEMPLATE: 'email_template',
   EMPLOYEES: 'employees',
   PAYMENT_METHODS: 'employee_payment_methods',
+  BANK_ACCOUNTS: 'employee_bank_accounts',
+  HOLIDAYS: 'payroll_holidays',
+  HOLIDAYS_LAST_SYNC: 'holidays_last_sync',
   PAYROLL_HISTORY: 'payroll_history',
   LANGUAGE: 'language',
 } as const

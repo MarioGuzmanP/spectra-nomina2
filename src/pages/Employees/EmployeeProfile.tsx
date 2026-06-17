@@ -20,10 +20,24 @@ import {
 import { useEmployeesStore } from '@/store/employeesStore'
 import { useSettingsStore } from '@/store/settingsStore'
 import { usePaymentMethodsStore } from '@/store/paymentMethodsStore'
+import { useBankAccountsStore, RD_BANKS } from '@/store/bankAccountsStore'
 import { toast } from '@/hooks/useToast'
 import { formatCurrency, formatDate, getInitials } from '@/lib/utils'
-import { PAYMENT_METHOD_LABELS } from '@/lib/pdf/paystubLabels'
+import { PAYMENT_METHOD_LABELS, getPaystubLang } from '@/lib/pdf/paystubLabels'
 import type { CustomDeduction, PaymentMethod } from '@/types'
+
+const BANK_FIELD_LABELS = {
+  en: {
+    bank: 'Bank',
+    accountNumber: 'Account Number',
+    note: 'This field is currently entered manually. It will be auto-synced from BambooHR when the integration becomes available.',
+  },
+  es: {
+    bank: 'Banco',
+    accountNumber: 'Número de Cuenta',
+    note: 'Este campo se ingresa manualmente por ahora. Se sincronizará automáticamente desde BambooHR cuando la integración esté disponible.',
+  },
+} as const
 
 interface DeductionFormState {
   name: string
@@ -51,6 +65,8 @@ export default function EmployeeProfile() {
   const hubstaff = useSettingsStore((s) => s.hubstaff)
   const paymentMethods = usePaymentMethodsStore((s) => s.methods)
   const setPaymentMethod = usePaymentMethodsStore((s) => s.setMethod)
+  const bankAccounts = useBankAccountsStore((s) => s.accounts)
+  const setBankAccount = useBankAccountsStore((s) => s.setAccount)
   const uiLang = i18n.language?.startsWith('es') ? 'es' : 'en'
 
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -73,6 +89,9 @@ export default function EmployeeProfile() {
   const deductions = employee.customDeductions ?? []
   const mapping = hubstaff.employeeMapping.find((m) => m.bambooEmployeeId === employee.id)
   const paymentMethod: PaymentMethod = paymentMethods[employee.id] ?? 'transfer'
+  const bankAccount = bankAccounts[employee.id] ?? { bank: '', accountNumber: '' }
+  const bankLang = getPaystubLang(employee.country)
+  const bankLabels = BANK_FIELD_LABELS[bankLang]
 
   const openAdd = () => {
     setEditingId(null)
@@ -207,6 +226,38 @@ export default function EmployeeProfile() {
               </dd>
             </div>
           </dl>
+
+          {/* Bank account — only for Transfer payment method */}
+          {paymentMethod === 'transfer' && (
+            <div className="mt-4 border-t border-gray-100 pt-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label>{bankLabels.bank}</Label>
+                  <Select
+                    value={bankAccount.bank}
+                    onValueChange={(v) => setBankAccount(employee.id, { bank: v })}
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder={bankLabels.bank} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {RD_BANKS.map((b) => (
+                        <SelectItem key={b} value={b}>{b}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>{bankLabels.accountNumber}</Label>
+                  <Input
+                    value={bankAccount.accountNumber}
+                    onChange={(e) => setBankAccount(employee.id, { accountNumber: e.target.value })}
+                  />
+                </div>
+              </div>
+              <p className="mt-2 text-xs text-gray-400">{bankLabels.note}</p>
+            </div>
+          )}
         </CardContent>
       </Card>
 

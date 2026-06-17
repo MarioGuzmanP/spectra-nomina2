@@ -1,6 +1,6 @@
 import type { FiscalParameters, PayrollSettings } from '@/types'
 import { calculateAnnualISR, roundHalfUp } from '@/lib/payroll/calculations'
-import { getDRHolidaysInRange } from '@/lib/drHolidays'
+import { getHolidaysInRange } from '@/lib/holidays'
 import type { PayrollRules } from './types'
 
 export function getDOPayrollRules(
@@ -10,13 +10,14 @@ export function getDOPayrollRules(
 ): PayrollRules {
   const payPeriodsPerYear = frequency === 'biweekly' ? 24 : 52
 
-  // Compute DR holidays for current year + next year
+  // DR holidays for current + next year, from the hybrid store (Nager.Date + manual),
+  // falling back to the computed statutory set before the first sync.
   const currentYear = new Date().getFullYear()
-  const holidayObjects = getDRHolidaysInRange(
+  const holidays = getHolidaysInRange(
+    'Dominican Republic',
     `${currentYear}-01-01`,
     `${currentYear + 1}-12-31`,
-  )
-  const holidays = holidayObjects.map((h) => h.date)
+  ).map((h) => h.date)
 
   return {
     country: 'Dominican Republic',

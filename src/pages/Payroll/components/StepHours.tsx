@@ -8,9 +8,10 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { useEmployeesStore } from '@/store/employeesStore'
 import { usePaymentMethodsStore } from '@/store/paymentMethodsStore'
-import { formatCurrency, getInitials } from '@/lib/utils'
+import { useBankAccountsStore } from '@/store/bankAccountsStore'
+import { formatCurrency, getInitials, maskAccount } from '@/lib/utils'
 import { roundHalfUp } from '@/lib/payroll/calculations'
-import { getDRHolidaysInRange } from '@/lib/drHolidays'
+import { getHolidaysInRange } from '@/lib/holidays'
 import { PAYMENT_METHOD_LABELS } from '@/lib/pdf/paystubLabels'
 import { SinglePaystubModal } from './SinglePaystubModal'
 import type { EmployeeHoursEntry, Employee, PaymentMethod } from '@/types'
@@ -65,6 +66,7 @@ export function StepHours({ employeeHours, startDate, endDate, frequency, countr
   const { t, i18n } = useTranslation()
   const employees = useEmployeesStore((s) => s.employees)
   const paymentMethods = usePaymentMethodsStore((s) => s.methods)
+  const bankAccounts = useBankAccountsStore((s) => s.accounts)
   const uiLang = i18n.language?.startsWith('es') ? 'es' : 'en'
   const [hours, setHours] = useState<EmployeeHoursEntry[]>(employeeHours)
   const [filter, setFilter] = useState<Filter>('all')
@@ -72,8 +74,8 @@ export function StepHours({ employeeHours, startDate, endDate, frequency, countr
   const [soloTarget, setSoloTarget] = useState<SoloTarget | null>(null)
 
   const holidays = useMemo(
-    () => getDRHolidaysInRange(startDate, endDate),
-    [startDate, endDate],
+    () => getHolidaysInRange(country, startDate, endDate),
+    [country, startDate, endDate],
   )
 
   const updateHours = (employeeId: string, field: 'regularHours' | 'otHours' | 'holidayHours' | 'nightHours', raw: string) => {
@@ -163,14 +165,11 @@ export function StepHours({ employeeHours, startDate, endDate, frequency, countr
           <div className="flex flex-wrap gap-2">
             {holidays.map((h) => (
               <span
-                key={h.date}
+                key={h.id}
                 className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs text-amber-700 border border-amber-200"
               >
                 <span className="font-mono">{h.date.slice(5)}</span>
-                {h.movable && h.date !== h.canonicalDate && (
-                  <span className="text-amber-400">({h.canonicalDate.slice(5)})</span>
-                )}
-                {t(`payroll.holidays.${h.key}`)}
+                {h.name}
               </span>
             ))}
           </div>
@@ -308,9 +307,13 @@ export function StepHours({ employeeHours, startDate, endDate, frequency, countr
                                 {(() => {
                                   const method: PaymentMethod = paymentMethods[emp.id] ?? 'transfer'
                                   const Icon = PAYMENT_ICON[method]
+                                  const acct = bankAccounts[emp.id]
+                                  const title = method === 'transfer' && acct?.bank
+                                    ? [PAYMENT_METHOD_LABELS[uiLang].transfer, acct.bank, maskAccount(acct.accountNumber)].filter(Boolean).join(' · ')
+                                    : PAYMENT_METHOD_LABELS[uiLang][method]
                                   return (
                                     <span
-                                      title={PAYMENT_METHOD_LABELS[uiLang][method]}
+                                      title={title}
                                       className="inline-flex shrink-0 items-center text-gray-400"
                                     >
                                       <Icon className="h-3 w-3" />

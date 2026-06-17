@@ -8,9 +8,10 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useSettingsStore } from '@/store/settingsStore'
+import { HolidaysTab } from './HolidaysTab'
 import { toast } from '@/hooks/useToast'
 
-type Tab = 'company' | 'payroll' | 'fiscal' | 'email'
+type Tab = 'company' | 'payroll' | 'fiscal' | 'holidays' | 'email'
 
 function CompanyTab() {
   const { t } = useTranslation()
@@ -426,6 +427,7 @@ export default function Settings() {
     { key: 'company', label: t('settings.tabs.company') },
     { key: 'payroll', label: t('settings.tabs.payroll') },
     { key: 'fiscal', label: t('settings.tabs.fiscal') },
+    { key: 'holidays', label: t('settings.tabs.holidays') },
     { key: 'email', label: t('settings.tabs.email') },
   ]
 
@@ -452,6 +454,7 @@ export default function Settings() {
       {activeTab === 'company' && <CompanyTab />}
       {activeTab === 'payroll' && <PayrollTab />}
       {activeTab === 'fiscal' && <FiscalTab />}
+      {activeTab === 'holidays' && <HolidaysTab />}
       {activeTab === 'email' && <EmailTab />}
     </div>
   )

@@ -12,6 +12,8 @@ import { generatePdfBlob, downloadBlob, blobToBase64 } from '@/lib/pdf/generateP
 import { logoSrc } from '@/lib/pdf/logo'
 import { getPaystubLang, PAYSTUB_LABELS, PAYMENT_METHOD_LABELS } from '@/lib/pdf/paystubLabels'
 import { usePaymentMethodsStore } from '@/store/paymentMethodsStore'
+import { useBankAccountsStore } from '@/store/bankAccountsStore'
+import { maskAccount } from '@/lib/utils'
 import { toast } from '@/hooks/useToast'
 import type { Employee, EmployeeHoursEntry } from '@/types'
 
@@ -55,10 +57,13 @@ export function SinglePaystubModal({ employee, hoursEntry, startDate, endDate, f
   const nightShift = useSettingsStore((s) => s.nightShift)
   const history = usePayrollStore((s) => s.history)
   const paymentMethod = usePaymentMethodsStore((s) => s.getMethod(employee.id))
+  const bankAccount = useBankAccountsStore((s) => s.accounts[employee.id])
   // Paystub language follows the employee's country (DR/Mexico → Spanish), not the UI language.
   const lang = getPaystubLang(country)
   const L = PAYSTUB_LABELS[lang]
-  const methodLabel = PAYMENT_METHOD_LABELS[lang][paymentMethod]
+  const methodLabel = paymentMethod === 'transfer' && bankAccount?.bank
+    ? [PAYMENT_METHOD_LABELS[lang].transfer, bankAccount.bank, maskAccount(bankAccount.accountNumber)].filter(Boolean).join(' · ')
+    : PAYMENT_METHOD_LABELS[lang][paymentMethod]
 
   const [downloading, setDownloading] = useState(false)
   const [sending, setSending] = useState(false)
@@ -124,6 +129,7 @@ export function SinglePaystubModal({ employee, hoursEntry, startDate, endDate, f
       endDate,
       country,
       paymentMethod,
+      bankAccount,
       otRatePercent: payrollSettings.otRatePercent,
       holidayRatePercent: payrollSettings.holidayRatePercent,
     })

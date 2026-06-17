@@ -40,6 +40,13 @@ export function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
 }
 
+/** "****1234" — masked last-4 of an account number, or '' if empty. */
+export function maskAccount(accountNumber?: string): string {
+  const digits = (accountNumber ?? '').replace(/\s/g, '')
+  if (!digits) return ''
+  return digits.length <= 4 ? `****${digits}` : `****${digits.slice(-4)}`
+}
+
 /**
  * Format a pay rate with its currency from BambooHR.
  * currency = ''  → "Not set" (not configured in BambooHR)

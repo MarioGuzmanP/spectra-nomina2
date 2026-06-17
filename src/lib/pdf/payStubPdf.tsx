@@ -6,8 +6,9 @@ import {
   Image,
   StyleSheet,
 } from '@react-pdf/renderer'
-import type { PayrollEntry, CompanySettings, PaymentMethod } from '@/types'
+import type { PayrollEntry, CompanySettings, PaymentMethod, BankAccount } from '@/types'
 import { roundHalfUp, safeNum } from '@/lib/payroll/calculations'
+import { maskAccount } from '@/lib/utils'
 import { getCurrencySymbol } from '@/lib/payroll/rules'
 import { logoSrc } from './logo'
 import { getPaystubLang, PAYSTUB_LABELS, US_DEDUCTION_LABELS, PAYMENT_METHOD_LABELS } from './paystubLabels'
@@ -116,6 +117,7 @@ interface Props {
   lang?: 'en' | 'es'
   country?: string
   paymentMethod?: PaymentMethod
+  bankAccount?: BankAccount
   otRatePercent?: number
   holidayRatePercent?: number
 }
@@ -127,6 +129,7 @@ export function PayStubDocument({
   endDate,
   country = 'Dominican Republic',
   paymentMethod = 'transfer',
+  bankAccount,
   otRatePercent = 35,
   holidayRatePercent = 100,
 }: Props) {
@@ -140,7 +143,11 @@ export function PayStubDocument({
   // FEATURE 1: paystub language follows the employee's country (DR/Mexico → Spanish).
   const lang = getPaystubLang(country)
   const l = PAYSTUB_LABELS[lang]
-  const methodLabel = PAYMENT_METHOD_LABELS[lang][paymentMethod]
+  // "Bank Transfer · Banco Popular · ****1234" when a bank account is on file for a transfer.
+  const acctMask = maskAccount(bankAccount?.accountNumber)
+  const methodLabel = paymentMethod === 'transfer' && bankAccount?.bank
+    ? [PAYMENT_METHOD_LABELS[lang].transfer, bankAccount.bank, acctMask].filter(Boolean).join(' · ')
+    : PAYMENT_METHOD_LABELS[lang][paymentMethod]
   const today = new Date().toLocaleDateString(lang === 'es' ? 'es-DO' : 'en-US')
 
   const otMultiplier = (1 + otRatePercent / 100).toFixed(2)
