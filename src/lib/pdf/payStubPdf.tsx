@@ -6,10 +6,11 @@ import {
   Image,
   StyleSheet,
 } from '@react-pdf/renderer'
-import type { PayrollEntry, CompanySettings } from '@/types'
+import type { PayrollEntry, CompanySettings, PaymentMethod } from '@/types'
 import { roundHalfUp, safeNum } from '@/lib/payroll/calculations'
 import { getCurrencySymbol } from '@/lib/payroll/rules'
 import { logoSrc } from './logo'
+import { getPaystubLang, PAYSTUB_LABELS, US_DEDUCTION_LABELS, PAYMENT_METHOD_LABELS } from './paystubLabels'
 
 const EMERALD = '#059669'
 const EMERALD_DARK = '#065F46'
@@ -111,95 +112,12 @@ interface Props {
   company: CompanySettings
   startDate: string
   endDate: string
-  lang: 'en' | 'es'
+  /** Deprecated — paystub language is now derived from `country` (DR/Mexico → Spanish). */
+  lang?: 'en' | 'es'
   country?: string
+  paymentMethod?: PaymentMethod
   otRatePercent?: number
   holidayRatePercent?: number
-}
-
-const L = {
-  en: {
-    stub: 'PAYSTUB',
-    dateRange: 'Date Range',
-    payDate: 'Pay Date',
-    position: 'Position',
-    dept: 'Department',
-    empId: 'ID',
-    payDesc: 'PAYMENT DESCRIPTION',
-    hours: 'HOURS',
-    rate: 'RATE',
-    total: 'TOTAL',
-    regular: 'Regular hours',
-    night: 'Night incentive',
-    holiday: 'Double Holiday hours',
-    ot: 'Overtime hours',
-    grossTotal: 'GROSS TOTAL',
-    deductions: 'DEDUCTIONS',
-    rateCol: 'RATE',
-    sfs: 'Family health insurance (SFS)',
-    afp: 'Pension retention (AFP)',
-    payAdvance: 'Pay Advance Deduction',
-    dependentTSS: 'Dependent TSS retention',
-    isr: 'Tax Retention ISR (DGII)',
-    isrDeferred: 'ISR calculated — charged in 2nd fortnight',
-    isr1st: 'ISR 1st Fortnight',
-    isr2nd: 'ISR 2nd Fortnight',
-    isrTotalRetained: 'Total ISR Retained',
-    isrSalary: 'Salary for the month applicable to ISR',
-    complementaryIns: 'Complementary Insurance Dependent',
-    totalDed: 'Total Deductions',
-    netPay: 'NET INCOME',
-    rnc: 'RNC',
-    generatedOn: 'Generated on',
-  },
-  es: {
-    stub: 'COMPROBANTE DE PAGO',
-    dateRange: 'Período',
-    payDate: 'Fecha de pago',
-    position: 'Cargo',
-    dept: 'Departamento',
-    empId: 'ID',
-    payDesc: 'DESCRIPCIÓN DE PAGO',
-    hours: 'HORAS',
-    rate: 'TARIFA',
-    total: 'TOTAL',
-    regular: 'Horas regulares',
-    night: 'Incentivo nocturno',
-    holiday: 'Horas feriado doble',
-    ot: 'Horas extra',
-    grossTotal: 'TOTAL BRUTO',
-    deductions: 'DEDUCCIONES',
-    rateCol: 'TASA',
-    sfs: 'Seguro familiar de salud (SFS)',
-    afp: 'Retención pensión (AFP)',
-    payAdvance: 'Adelanto de sueldo',
-    dependentTSS: 'Retención TSS dependiente',
-    isr: 'Retención ISR (DGII)',
-    isrDeferred: 'ISR calculado — se cobra en 2da quincena',
-    isr1st: 'ISR 1ra Quincena',
-    isr2nd: 'ISR 2da Quincena',
-    isrTotalRetained: 'Total ISR Retenido',
-    isrSalary: 'Salario del mes aplicable a ISR',
-    complementaryIns: 'Seguro complementario dependiente',
-    totalDed: 'Total deducciones',
-    netPay: 'SALARIO NETO',
-    rnc: 'RNC',
-    generatedOn: 'Generado el',
-  },
-}
-
-// Country-specific deduction labels
-const COUNTRY_LABELS = {
-  us: {
-    sfs: 'Medicare (1.45%)',
-    afp: 'Social Security (6.2%)',
-    isr: 'Federal Income Tax',
-  },
-  dr: {
-    sfs: 'Family health insurance (SFS)',
-    afp: 'Pension retention (AFP)',
-    isr: 'Tax Retention ISR (DGII)',
-  },
 }
 
 export function PayStubDocument({
@@ -207,8 +125,8 @@ export function PayStubDocument({
   company,
   startDate,
   endDate,
-  lang,
   country = 'Dominican Republic',
+  paymentMethod = 'transfer',
   otRatePercent = 35,
   holidayRatePercent = 100,
 }: Props) {
@@ -219,15 +137,19 @@ export function PayStubDocument({
     ? (safeNum(h.regularHours) > 0 ? safeNum(c.regularPay) / safeNum(h.regularHours) : 0)
     : safeNum(h.payRateOverride ?? emp.payRate)
   const logo = logoSrc(company.logoBase64)
-  const l = L[lang]
+  // FEATURE 1: paystub language follows the employee's country (DR/Mexico → Spanish).
+  const lang = getPaystubLang(country)
+  const l = PAYSTUB_LABELS[lang]
+  const methodLabel = PAYMENT_METHOD_LABELS[lang][paymentMethod]
   const today = new Date().toLocaleDateString(lang === 'es' ? 'es-DO' : 'en-US')
 
   const otMultiplier = (1 + otRatePercent / 100).toFixed(2)
   void holidayRatePercent // holiday is always ×2 in DR; column shows base rate with "Double" in label
 
-  // Country-specific labels and currency
+  // Country-specific labels and currency. US uses its statutory names (Medicare/SS/Federal);
+  // DR & every other country use the language-map deduction labels.
   const isUS = country.toLowerCase().includes('united states') || country.toLowerCase() === 'us'
-  const countryL = isUS ? COUNTRY_LABELS.us : COUNTRY_LABELS.dr
+  const countryL = isUS ? US_DEDUCTION_LABELS : { sfs: l.sfs, afp: l.afp, isr: l.isr }
   const fmt = makeFmt(getCurrencySymbol(country))
 
   const payAdvanceAmt    = lookupDed(c.customDeductionsBreakdown, ['advance', 'adelanto'])
@@ -277,7 +199,8 @@ export function PayStubDocument({
         <View style={S.empBox}>
           <View style={{ flex: 1 }}>
             <Text style={S.empName}>{emp.firstName} {emp.lastName}</Text>
-            <View style={{ flexDirection: 'row', gap: 14, flexWrap: 'wrap' }}>
+            <Text style={S.empMeta}>{l.paymentMethod}: <Text style={S.empMetaValue}>{methodLabel}</Text></Text>
+            <View style={{ flexDirection: 'row', gap: 14, flexWrap: 'wrap', marginTop: 1 }}>
               {!!emp.jobTitle && (
                 <Text style={S.empMeta}>{l.position}: <Text style={S.empMetaValue}>{emp.jobTitle}</Text></Text>
               )}

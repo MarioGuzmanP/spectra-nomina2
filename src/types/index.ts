@@ -1,3 +1,5 @@
+export type PaymentMethod = 'cash' | 'transfer' | 'check'
+
 export interface Employee {
   id: string
   firstName: string

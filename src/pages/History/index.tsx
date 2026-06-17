@@ -9,6 +9,7 @@ import { Progress } from '@/components/ui/progress'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { usePayrollStore } from '@/store/payrollStore'
 import { useSettingsStore } from '@/store/settingsStore'
+import { usePaymentMethodsStore } from '@/store/paymentMethodsStore'
 import { toast } from '@/hooks/useToast'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { generatePdfBlob, downloadBlob, blobToBase64 } from '@/lib/pdf/generatePdf'
@@ -30,7 +31,8 @@ async function buildStubElement(
   country?: string,
 ) {
   const PayStubDocument = await loadPayStub()
-  return React.createElement(PayStubDocument, { entry, company, startDate, endDate, lang, country })
+  const paymentMethod = usePaymentMethodsStore.getState().getMethod(entry.employee.id)
+  return React.createElement(PayStubDocument, { entry, company, startDate, endDate, lang, country, paymentMethod })
 }
 
 function statusVariant(status: PayrollPeriod['status']): 'default' | 'secondary' | 'info' | 'warning' {

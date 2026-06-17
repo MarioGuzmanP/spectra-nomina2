@@ -1,17 +1,25 @@
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Clock, Pencil, CheckCircle2, AlertTriangle, MapPin, CalendarDays, Calculator, Search } from 'lucide-react'
+import { Clock, Pencil, CheckCircle2, AlertTriangle, MapPin, CalendarDays, Calculator, Search, Banknote, Landmark, ScrollText } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { useEmployeesStore } from '@/store/employeesStore'
+import { usePaymentMethodsStore } from '@/store/paymentMethodsStore'
 import { formatCurrency, getInitials } from '@/lib/utils'
 import { roundHalfUp } from '@/lib/payroll/calculations'
 import { getDRHolidaysInRange } from '@/lib/drHolidays'
+import { PAYMENT_METHOD_LABELS } from '@/lib/pdf/paystubLabels'
 import { SinglePaystubModal } from './SinglePaystubModal'
-import type { EmployeeHoursEntry, Employee } from '@/types'
+import type { EmployeeHoursEntry, Employee, PaymentMethod } from '@/types'
+
+const PAYMENT_ICON: Record<PaymentMethod, typeof Banknote> = {
+  cash: Banknote,
+  transfer: Landmark,
+  check: ScrollText,
+}
 
 type Filter = 'all' | 'with-hours' | 'zero-hours' | 'no-match' | 'ot'
 
@@ -54,8 +62,10 @@ function countryFlag(country: string): string {
 }
 
 export function StepHours({ employeeHours, startDate, endDate, frequency, country, onNext, onBack }: Props) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const employees = useEmployeesStore((s) => s.employees)
+  const paymentMethods = usePaymentMethodsStore((s) => s.methods)
+  const uiLang = i18n.language?.startsWith('es') ? 'es' : 'en'
   const [hours, setHours] = useState<EmployeeHoursEntry[]>(employeeHours)
   const [filter, setFilter] = useState<Filter>('all')
   const [search, setSearch] = useState('')
@@ -291,9 +301,23 @@ export function StepHours({ employeeHours, startDate, endDate, frequency, countr
                               {getInitials(emp.firstName, emp.lastName)}
                             </div>
                             <div className="min-w-0">
-                              <p className="font-medium text-gray-900 text-xs truncate">
-                                {emp.firstName} {emp.lastName}
-                              </p>
+                              <div className="flex items-center gap-1.5">
+                                <p className="font-medium text-gray-900 text-xs truncate">
+                                  {emp.firstName} {emp.lastName}
+                                </p>
+                                {(() => {
+                                  const method: PaymentMethod = paymentMethods[emp.id] ?? 'transfer'
+                                  const Icon = PAYMENT_ICON[method]
+                                  return (
+                                    <span
+                                      title={PAYMENT_METHOD_LABELS[uiLang][method]}
+                                      className="inline-flex shrink-0 items-center text-gray-400"
+                                    >
+                                      <Icon className="h-3 w-3" />
+                                    </span>
+                                  )
+                                })()}
+                              </div>
                               <p className="text-[10px] text-gray-400 truncate">{emp.jobTitle}</p>
                             </div>
                           </div>

@@ -164,6 +164,7 @@
       "department": "Department",
       "jobTitle": "Job Title",
       "payRate": "Pay Rate (RD$/hr)",
+      "paymentMethod": "Payment Method",
       "vacationInfo": "Vacation (coming soon)"
     },
     "deductions": {

@@ -19,9 +19,11 @@ import {
 } from '@/components/ui/dialog'
 import { useEmployeesStore } from '@/store/employeesStore'
 import { useSettingsStore } from '@/store/settingsStore'
+import { usePaymentMethodsStore } from '@/store/paymentMethodsStore'
 import { toast } from '@/hooks/useToast'
 import { formatCurrency, formatDate, getInitials } from '@/lib/utils'
-import type { CustomDeduction } from '@/types'
+import { PAYMENT_METHOD_LABELS } from '@/lib/pdf/paystubLabels'
+import type { CustomDeduction, PaymentMethod } from '@/types'
 
 interface DeductionFormState {
   name: string
@@ -41,12 +43,15 @@ const EMPTY_FORM: DeductionFormState = {
 
 export default function EmployeeProfile() {
   const { id } = useParams<{ id: string }>()
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const employees = useEmployeesStore((s) => s.employees)
   const addDeduction = useEmployeesStore((s) => s.addDeduction)
   const updateDeduction = useEmployeesStore((s) => s.updateDeduction)
   const removeDeduction = useEmployeesStore((s) => s.removeDeduction)
   const hubstaff = useSettingsStore((s) => s.hubstaff)
+  const paymentMethods = usePaymentMethodsStore((s) => s.methods)
+  const setPaymentMethod = usePaymentMethodsStore((s) => s.setMethod)
+  const uiLang = i18n.language?.startsWith('es') ? 'es' : 'en'
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -67,6 +72,7 @@ export default function EmployeeProfile() {
 
   const deductions = employee.customDeductions ?? []
   const mapping = hubstaff.employeeMapping.find((m) => m.bambooEmployeeId === employee.id)
+  const paymentMethod: PaymentMethod = paymentMethods[employee.id] ?? 'transfer'
 
   const openAdd = () => {
     setEditingId(null)
@@ -181,6 +187,24 @@ export default function EmployeeProfile() {
             <div>
               <dt className="text-xs text-gray-500">Employee ID</dt>
               <dd className="mt-0.5 text-sm font-mono text-gray-600">{employee.id}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-gray-500 mb-1">{t('employees.profile.paymentMethod')}</dt>
+              <dd>
+                <Select
+                  value={paymentMethod}
+                  onValueChange={(v) => setPaymentMethod(employee.id, v as PaymentMethod)}
+                >
+                  <SelectTrigger className="h-8 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="transfer">{PAYMENT_METHOD_LABELS[uiLang].transfer}</SelectItem>
+                    <SelectItem value="cash">{PAYMENT_METHOD_LABELS[uiLang].cash}</SelectItem>
+                    <SelectItem value="check">{PAYMENT_METHOD_LABELS[uiLang].check}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </dd>
             </div>
           </dl>
         </CardContent>

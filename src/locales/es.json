@@ -164,6 +164,7 @@
       "department": "Departamento",
       "jobTitle": "Cargo",
       "payRate": "Tarifa (RD$/hr)",
+      "paymentMethod": "Método de Pago",
       "vacationInfo": "Vacaciones (próximamente)"
     },
     "deductions": {
