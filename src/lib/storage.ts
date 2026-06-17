@@ -51,6 +51,7 @@ export const STORAGE_KEYS = {
   HOLIDAYS: 'payroll_holidays',
   HOLIDAYS_LAST_SYNC: 'holidays_last_sync',
   VACATION_RULES: 'vacation_rules',
+  VACATION_PAYMENTS: 'vacation_payments_made',
   PAYROLL_HISTORY: 'payroll_history',
   LANGUAGE: 'language',
 } as const

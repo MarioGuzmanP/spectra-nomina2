@@ -222,7 +222,9 @@
       "noPeriods": "No approved vacations for {{year}}.",
       "days": "{{count}} days",
       "generateReceipt": "Generate Vacation Receipt",
-      "receipt": "Receipt"
+      "receipt": "Receipt",
+      "paid": "Vacation paid",
+      "paidDetail": "Payment generated on {{date}} for {{days}} days · {{amount}}"
     },
     "deductions": {
       "addDeduction": "Add Deduction",
@@ -291,6 +293,7 @@
       "edited": "Edited",
       "filter": "Show",
       "searchPlaceholder": "Search employee...",
+      "vacationTooltip": "On vacation {{period}} · Vacation pay of {{amount}} is generated separately",
       "filterAll": "All",
       "filterWithHours": "With Hours",
       "filterZeroHours": "Zero Hours",

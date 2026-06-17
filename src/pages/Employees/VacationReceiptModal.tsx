@@ -8,35 +8,60 @@ import type { Employee } from '@/types'
 
 const RECEIPT_LABELS = {
   en: {
-    title: 'Vacation Receipt', period: 'Period', days: 'Vacation days',
-    avgMonthly: 'Average monthly salary', dailySalary: 'Daily salary',
-    gross: 'Vacation pay (gross)', sfs: 'SFS (3.04%)', afp: 'AFP (2.87%)', isr: 'ISR (applies)',
-    net: 'Net to pay', close: 'Close',
+    title: 'Vacation Receipt', period: 'Vacation Period', entitledDays: 'Entitled days',
+    daysTaken: 'Days taken this period', avgMonthly: 'Average monthly salary', dailySalary: 'Daily salary',
+    gross: 'Gross vacation pay', sfs: 'SFS (3.04%)', afp: 'AFP (2.87%)', isr: 'ISR (applies)',
+    net: 'Net to pay', close: 'Close', approve: 'Approve payment',
   },
   es: {
-    title: 'Recibo de Vacaciones', period: 'Período', days: 'Días de vacaciones',
-    avgMonthly: 'Salario mensual promedio', dailySalary: 'Salario diario',
+    title: 'Recibo de Vacaciones', period: 'Período de vacaciones', entitledDays: 'Días con derecho',
+    daysTaken: 'Días tomados este período', avgMonthly: 'Salario mensual promedio', dailySalary: 'Salario diario',
     gross: 'Pago de vacaciones (bruto)', sfs: 'SFS (3.04%)', afp: 'AFP (2.87%)', isr: 'ISR (aplica)',
-    net: 'Neto a pagar', close: 'Cerrar',
+    net: 'Neto a pagar', close: 'Cerrar', approve: 'Aprobar pago',
   },
+}
+
+export interface VacationPaymentResult {
+  date: string
+  amount: number
+  gross: number
+  days: number
+  periodLabel?: string
 }
 
 interface Props {
   employee: Employee
   country: string
   payRate: number
-  days: number
+  /** Entitled days from seniority (14 / 18 / 23) — drives the pay. */
+  entitledDays: number
+  /** Days actually taken in the triggering BambooHR request — informational only. */
+  daysTaken?: number
   periodLabel?: string
+  /** When provided, an "Approve payment" button records the once-per-year payment. */
+  onConfirm?: (payment: VacationPaymentResult) => void
   onClose: () => void
 }
 
-export function VacationReceiptModal({ employee, country, payRate, days, periodLabel, onClose }: Props) {
+export function VacationReceiptModal({ employee, country, payRate, entitledDays, daysTaken, periodLabel, onConfirm, onClose }: Props) {
   const lang = getPaystubLang(country)
   const L = RECEIPT_LABELS[lang]
   const sym = getCurrencySymbol(country)
   const fmt = (n: number) => formatCurrencyWithSymbol(n, sym)
 
-  const result = calculateVacationPayForDays(country, payRate, days)
+  // Pay is computed on the ENTITLED days, never the BambooHR request days.
+  const result = calculateVacationPayForDays(country, payRate, entitledDays)
+
+  const confirm = () => {
+    if (!result || !onConfirm) return
+    onConfirm({
+      date: new Date().toISOString(),
+      amount: result.net,
+      gross: result.gross,
+      days: entitledDays,
+      periodLabel,
+    })
+  }
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose() }}>
@@ -54,7 +79,8 @@ export function VacationReceiptModal({ employee, country, payRate, days, periodL
           {result ? (
             <table className="w-full">
               <tbody className="divide-y divide-gray-50">
-                <Row label={L.days} value={String(result.days)} />
+                <Row label={L.entitledDays} value={String(entitledDays)} bold />
+                {daysTaken != null && <Row label={L.daysTaken} value={String(daysTaken)} muted />}
                 <Row label={L.avgMonthly} value={fmt(result.averageMonthlySalary)} />
                 <Row label={L.dailySalary} value={fmt(result.dailySalary)} />
                 <Row label={L.gross} value={fmt(result.gross)} bold />
@@ -76,6 +102,7 @@ export function VacationReceiptModal({ employee, country, payRate, days, periodL
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>{L.close}</Button>
+          {onConfirm && result && <Button onClick={confirm}>{L.approve}</Button>}
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -14,8 +14,8 @@ import { formatCurrency, formatDate, getInitials, maskAccount } from '@/lib/util
 import { roundHalfUp, formatCurrencyWithSymbol } from '@/lib/payroll/calculations'
 import { getCurrencySymbol } from '@/lib/payroll/rules'
 import { getHolidaysInRange } from '@/lib/holidays'
-import { calculateVacationPayForDays } from '@/lib/vacations'
-import { fetchVacations, getVacationsForEmployee, getVacationsOverlappingPeriod, countVacationDays, type VacationRequest } from '@/lib/connectors/bamboohr-vacations'
+import { calculateVacationPay, yearsOfService } from '@/lib/vacations'
+import { fetchVacations, getVacationsForEmployee, getVacationsOverlappingPeriod, type VacationRequest } from '@/lib/connectors/bamboohr-vacations'
 import { PAYMENT_METHOD_LABELS } from '@/lib/pdf/paystubLabels'
 import { SinglePaystubModal } from './SinglePaystubModal'
 import type { EmployeeHoursEntry, Employee, PaymentMethod } from '@/types'
@@ -85,17 +85,15 @@ export function StepHours({ employeeHours, startDate, endDate, frequency, countr
     return () => { cancelled = true }
   }, [bamboo.connected, bamboo.subdomain, bamboo.apiKey, startDate])
 
-  // Vacation overlap + tooltip (dates + computed pay) for an employee in this period.
+  // Vacation overlap tooltip for an employee. Vacation pay is the ENTITLED-days amount
+  // (paid once per year at the first request), generated separately — not per period.
   const vacationInfo = (emp: Employee): string | null => {
     const overlapping = getVacationsOverlappingPeriod(getVacationsForEmployee(emp.id, vacations), startDate, endDate)
     if (overlapping.length === 0) return null
-    const sym = getCurrencySymbol(country)
-    return overlapping.map((v) => {
-      const days = countVacationDays(v.dates)
-      const pay = calculateVacationPayForDays(country, emp.payRate, days)
-      const payStr = pay ? ` · ${formatCurrencyWithSymbol(pay.gross, sym)}` : ''
-      return `${formatDate(v.start)} → ${formatDate(v.end)} · ${days}d${payStr}`
-    }).join('\n')
+    const period = overlapping.map((v) => `${formatDate(v.start)} → ${formatDate(v.end)}`).join('\n')
+    const pay = calculateVacationPay(country, emp.payRate, yearsOfService(emp.hireDate))
+    const amount = pay ? formatCurrencyWithSymbol(pay.gross, getCurrencySymbol(country)) : '—'
+    return t('payroll.review.vacationTooltip', { period, amount })
   }
   const [hours, setHours] = useState<EmployeeHoursEntry[]>(employeeHours)
   const [filter, setFilter] = useState<Filter>('all')
