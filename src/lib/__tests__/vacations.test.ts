@@ -49,4 +49,21 @@ describe('vacation rules', () => {
   it('returns null for an unconfigured country', () => {
     expect(calculateVacationPay('Kenya', 200, 3)).toBeNull()
   })
+
+  it('Salary: payRate IS the monthly salary (no hourly annualization)', () => {
+    // payRate 69,440/month, 3 yrs → 14 days; daily = 69,440 / 23.83 = 2,913.97; gross = ×14
+    const r = calculateVacationPay('Dominican Republic', 69440, 3, 'Salary')!
+    expect(r.days).toBe(14)
+    expect(r.averageMonthlySalary).toBe(69440)
+    expect(r.dailySalary).toBeCloseTo(2913.97, 2)
+    expect(r.gross).toBeCloseTo(40795.58, 2)
+  })
+
+  it('Hourly default still annualizes via the formula', () => {
+    const hourly = calculateVacationPay('Dominican Republic', 200, 3)!          // default Hourly
+    const salary = calculateVacationPay('Dominican Republic', 200, 3, 'Salary')!
+    expect(hourly.averageMonthlySalary).toBeCloseTo(33333.33, 2) // 200×40×50/12
+    expect(salary.averageMonthlySalary).toBe(200)                // used directly
+    expect(hourly.gross).not.toBe(salary.gross)
+  })
 })

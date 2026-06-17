@@ -121,20 +121,27 @@ export interface VacationPayResult {
  * Returns null when the country has no configured rules.
  */
 /**
- * Vacation pay for an explicit number of days (e.g. the real days taken, summed from
- * BambooHR's `dates` object). Reads the formula + deduction toggles from storage.
+ * Vacation pay for an explicit number of days. Reads the formula + deduction toggles
+ * from storage. The monthly base depends on payType:
+ *   - Salary: payRate IS the monthly salary (BambooHR payPer === 'Month') → used directly.
+ *   - Hourly: averageMonthly = (payRate × hoursPerWeek × weeksPerYear) ÷ monthsPerYear.
+ * Then dailySalary = monthly ÷ dailyDivisor; gross = dailySalary × days.
  */
 export function calculateVacationPayForDays(
   country: string,
-  hourlyRate: number,
+  payRate: number,
   days: number,
+  payType: 'Hourly' | 'Salary' = 'Hourly',
   rates: { sfsRate?: number; afpRate?: number } = {},
 ): VacationPayResult | null {
   const rules = getVacationRules(country)
   if (!rules) return null
 
   const { hoursPerWeek, weeksPerYear, monthsPerYear, dailyDivisor } = rules.formula
-  const averageMonthlySalary = roundHalfUp((hourlyRate * hoursPerWeek * weeksPerYear) / (monthsPerYear || 1))
+  // Salary employees already have a fixed monthly salary — do NOT annualize via hours.
+  const averageMonthlySalary = payType === 'Salary'
+    ? roundHalfUp(payRate)
+    : roundHalfUp((payRate * hoursPerWeek * weeksPerYear) / (monthsPerYear || 1))
   const dailySalary = roundHalfUp(averageMonthlySalary / (dailyDivisor || 1))
   const gross = roundHalfUp(dailySalary * days)
 
@@ -154,12 +161,13 @@ export function calculateVacationPayForDays(
  */
 export function calculateVacationPay(
   country: string,
-  hourlyRate: number,
+  payRate: number,
   yearsOfService: number,
+  payType: 'Hourly' | 'Salary' = 'Hourly',
   rates: { sfsRate?: number; afpRate?: number } = {},
 ): VacationPayResult | null {
   const rules = getVacationRules(country)
   if (!rules) return null
   const days = getVacationDays(rules.tiers, yearsOfService)
-  return calculateVacationPayForDays(country, hourlyRate, days, rates)
+  return calculateVacationPayForDays(country, payRate, days, payType, rates)
 }

@@ -91,7 +91,7 @@ export function StepHours({ employeeHours, startDate, endDate, frequency, countr
     const overlapping = getVacationsOverlappingPeriod(getVacationsForEmployee(emp.id, vacations), startDate, endDate)
     if (overlapping.length === 0) return null
     const period = overlapping.map((v) => `${formatDate(v.start)} → ${formatDate(v.end)}`).join('\n')
-    const pay = calculateVacationPay(country, emp.payRate, yearsOfService(emp.hireDate))
+    const pay = calculateVacationPay(country, emp.payRate, yearsOfService(emp.hireDate), emp.payType)
     const amount = pay ? formatCurrencyWithSymbol(pay.gross, getCurrencySymbol(country)) : '—'
     return t('payroll.review.vacationTooltip', { period, amount })
   }

@@ -30,7 +30,7 @@ export function VacationInfoSection({ employee }: { employee: Employee }) {
   const rules = getVacationRules(country)
   const years = yearsOfService(employee.hireDate)
   const entitledDays = rules ? getVacationDays(rules.tiers, years) : 0
-  const pay = calculateVacationPay(country, employee.payRate, years) // entitlement-based
+  const pay = calculateVacationPay(country, employee.payRate, years, employee.payType) // entitlement-based
   const fmt = (n: number) => formatCurrencyWithSymbol(n, getCurrencySymbol(country))
 
   const [vacations, setVacations] = useState<VacationRequest[]>([])

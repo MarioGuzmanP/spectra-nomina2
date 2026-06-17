@@ -9,13 +9,15 @@ import type { Employee } from '@/types'
 const RECEIPT_LABELS = {
   en: {
     title: 'Vacation Receipt', period: 'Vacation Period', entitledDays: 'Entitled days',
-    daysTaken: 'Days taken this period', avgMonthly: 'Average monthly salary', dailySalary: 'Daily salary',
+    daysTaken: 'Days taken this period', avgMonthly: 'Average monthly salary', monthlySalary: 'Monthly salary',
+    dailySalary: 'Daily salary',
     gross: 'Gross vacation pay', sfs: 'SFS (3.04%)', afp: 'AFP (2.87%)', isr: 'ISR (applies)',
     net: 'Net to pay', close: 'Close', approve: 'Approve payment',
   },
   es: {
     title: 'Recibo de Vacaciones', period: 'Período de vacaciones', entitledDays: 'Días con derecho',
-    daysTaken: 'Días tomados este período', avgMonthly: 'Salario mensual promedio', dailySalary: 'Salario diario',
+    daysTaken: 'Días tomados este período', avgMonthly: 'Salario mensual promedio', monthlySalary: 'Salario mensual',
+    dailySalary: 'Salario diario',
     gross: 'Pago de vacaciones (bruto)', sfs: 'SFS (3.04%)', afp: 'AFP (2.87%)', isr: 'ISR (aplica)',
     net: 'Neto a pagar', close: 'Cerrar', approve: 'Aprobar pago',
   },
@@ -50,7 +52,9 @@ export function VacationReceiptModal({ employee, country, payRate, entitledDays,
   const fmt = (n: number) => formatCurrencyWithSymbol(n, sym)
 
   // Pay is computed on the ENTITLED days, never the BambooHR request days.
-  const result = calculateVacationPayForDays(country, payRate, entitledDays)
+  // Salary employees: payRate IS the monthly salary; Hourly: annualized via the formula.
+  const result = calculateVacationPayForDays(country, payRate, entitledDays, employee.payType)
+  const monthlyLabel = employee.payType === 'Salary' ? L.monthlySalary : L.avgMonthly
 
   const confirm = () => {
     if (!result || !onConfirm) return
@@ -81,7 +85,7 @@ export function VacationReceiptModal({ employee, country, payRate, entitledDays,
               <tbody className="divide-y divide-gray-50">
                 <Row label={L.entitledDays} value={String(entitledDays)} bold />
                 {daysTaken != null && <Row label={L.daysTaken} value={String(daysTaken)} muted />}
-                <Row label={L.avgMonthly} value={fmt(result.averageMonthlySalary)} />
+                <Row label={monthlyLabel} value={fmt(result.averageMonthlySalary)} />
                 <Row label={L.dailySalary} value={fmt(result.dailySalary)} />
                 <Row label={L.gross} value={fmt(result.gross)} bold />
                 {result.sfsAmount > 0 && <Row label={L.sfs} value={`(${fmt(result.sfsAmount)})`} red />}
