@@ -1,9 +1,12 @@
+import { useEffect } from 'react'
 import { Outlet } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { Header } from './Header'
 import { Toaster } from '@/components/ui/toaster'
 
 export function Layout() {
+  useEffect(() => { document.title = 'Nómina | Spectra Suite' }, [])
+
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
       <Sidebar />

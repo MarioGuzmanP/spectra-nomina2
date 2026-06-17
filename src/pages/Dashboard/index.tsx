@@ -191,21 +191,21 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent className="space-y-2">
                 <Button asChild className="w-full justify-start">
-                  <Link to="/payroll">
+                  <Link to="/nomina/payroll">
                     <DollarSign className="mr-2 h-4 w-4" />
                     {t('dashboard.processPayroll')}
                     <ArrowRight className="ml-auto h-4 w-4" />
                   </Link>
                 </Button>
                 <Button asChild variant="outline" className="w-full justify-start">
-                  <Link to="/employees">
+                  <Link to="/nomina/employees">
                     <Users className="mr-2 h-4 w-4" />
                     {t('dashboard.syncEmployees')}
                     <ArrowRight className="ml-auto h-4 w-4" />
                   </Link>
                 </Button>
                 <Button asChild variant="outline" className="w-full justify-start">
-                  <Link to="/history">
+                  <Link to="/nomina/history">
                     <TrendingUp className="mr-2 h-4 w-4" />
                     {t('nav.history')}
                     <ArrowRight className="ml-auto h-4 w-4" />
@@ -223,7 +223,7 @@ export default function Dashboard() {
             </div>
             <p className="mt-4 text-sm text-gray-500">{t('dashboard.noPayrollData')}</p>
             <Button asChild className="mt-4">
-              <Link to="/payroll">
+              <Link to="/nomina/payroll">
                 {t('dashboard.processPayroll')}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
@@ -237,7 +237,7 @@ export default function Dashboard() {
           <CardContent className="p-4">
             <p className="text-sm text-amber-700">
               No employees found.{' '}
-              <Link to="/connectors" className="font-medium underline">
+              <Link to="/nomina/connectors" className="font-medium underline">
                 Configure BambooHR
               </Link>{' '}
               and sync employees to get started.

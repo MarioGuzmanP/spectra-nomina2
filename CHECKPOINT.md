@@ -1,5 +1,18 @@
 # CHECKPOINT.md — Spectra Payroll System
 
+## ⏪ Restore point — pre Spectra Suite restructure
+Tag **`v1.0-pre-suite`** marks the last stable Spectra Nómina build *before* the
+Spectra Suite restructure (single payroll app → modular platform). To return to it:
+
+```bash
+git checkout v1.0-pre-suite
+git checkout -b restore-pre-suite
+```
+
+Everything after that tag is purely a structural/navigation change — payroll logic,
+calculations, PDFs, Settings, Connectors, Holidays, Vacation Rules and all localStorage
+keys are unchanged. Routes moved under `/nomina/*`; the app now opens on `/suite`.
+
 **Last updated:** 2026-06-16  
 **Current Phase:** SYSTEM COMPLETE — bug fixes  
 **Git branch:** main  

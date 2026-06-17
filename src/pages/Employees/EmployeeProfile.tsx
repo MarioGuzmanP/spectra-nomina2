@@ -81,7 +81,7 @@ export default function EmployeeProfile() {
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <p className="text-gray-500">Employee not found.</p>
         <Button variant="outline" className="mt-4" asChild>
-          <Link to="/employees">{t('common.back')}</Link>
+          <Link to="/nomina/employees">{t('common.back')}</Link>
         </Button>
       </div>
     )
@@ -150,7 +150,7 @@ export default function EmployeeProfile() {
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" asChild>
-          <Link to="/employees">
+          <Link to="/nomina/employees">
             <ArrowLeft className="mr-1 h-4 w-4" />
             {t('common.back')}
           </Link>
@@ -282,7 +282,7 @@ export default function EmployeeProfile() {
           ) : (
             <p className="text-sm text-gray-500">
               {t('employees.profile.notMapped')}{' '}
-              <Link to="/connectors" className="text-emerald-600 hover:underline">
+              <Link to="/nomina/connectors" className="text-emerald-600 hover:underline">
                 {t('employees.profile.configureConnectors')}
               </Link>
             </p>

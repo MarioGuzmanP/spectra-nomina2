@@ -391,7 +391,7 @@ export default function Employees() {
                         </td>
                         <td className="px-6 py-4">
                           <Button variant="ghost" size="sm" asChild>
-                            <Link to={`/employees/${emp.id}`}>{t('common.viewDetails')}</Link>
+                            <Link to={`/nomina/employees/${emp.id}`}>{t('common.viewDetails')}</Link>
                           </Button>
                         </td>
                       </tr>

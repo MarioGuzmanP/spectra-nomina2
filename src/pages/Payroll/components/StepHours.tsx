@@ -174,7 +174,7 @@ export function StepHours({ employeeHours, startDate, endDate, frequency, countr
             </span>
           </div>
           <Link
-            to="/connectors"
+            to="/nomina/connectors"
             className="shrink-0 text-xs font-semibold text-orange-700 underline underline-offset-2 hover:text-orange-900"
           >
             {t('payroll.review.configureMapping')}

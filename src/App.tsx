@@ -1,5 +1,7 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Layout } from './components/layout/Layout'
+import { ModuleShell } from './components/layout/ModuleShell'
+import SuiteHome from './pages/Suite/SuiteHome'
 import Dashboard from './pages/Dashboard'
 import Employees from './pages/Employees'
 import EmployeeProfile from './pages/Employees/EmployeeProfile'
@@ -12,8 +14,14 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route element={<Layout />}>
-          <Route index element={<Dashboard />} />
+        {/* Default → Spectra Suite home */}
+        <Route path="/" element={<Navigate to="/suite" replace />} />
+        <Route path="/suite" element={<SuiteHome />} />
+
+        {/* Nómina module (the existing payroll app) */}
+        <Route path="/nomina" element={<Layout />}>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<Dashboard />} />
           <Route path="employees" element={<Employees />} />
           <Route path="employees/:id" element={<EmployeeProfile />} />
           <Route path="payroll" element={<Payroll />} />
@@ -21,6 +29,14 @@ export default function App() {
           <Route path="connectors" element={<Connectors />} />
           <Route path="settings" element={<Settings />} />
         </Route>
+
+        {/* Placeholder modules — Coming Soon */}
+        <Route path="/rrhh" element={<ModuleShell moduleId="rrhh" />} />
+        <Route path="/facturacion" element={<ModuleShell moduleId="facturacion" />} />
+        <Route path="/gastos" element={<ModuleShell moduleId="gastos" />} />
+
+        {/* Unknown → Suite home */}
+        <Route path="*" element={<Navigate to="/suite" replace />} />
       </Routes>
     </BrowserRouter>
   )

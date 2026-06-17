@@ -74,7 +74,7 @@ export function StepApprove({ startDate, endDate, frequency, country, entries, t
     downloadCSV(csv, `ManagerReport_${startDate}_${endDate}.csv`)
   }
 
-  const handleGoToHistory = () => navigate('/history')
+  const handleGoToHistory = () => navigate('/nomina/history')
 
   const ReportButtons = () => (
     <div className="flex gap-2">

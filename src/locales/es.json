@@ -1,4 +1,19 @@
 {
+  "suite": {
+    "title": "Spectra Suite",
+    "subtitle": "Selecciona un módulo para comenzar",
+    "active": "Activo",
+    "comingSoon": "Próximamente",
+    "back": "Spectra Suite",
+    "comingSoonText": "Este módulo está en desarrollo. Próximamente disponible.",
+    "backToSuite": "Volver a Spectra Suite",
+    "modules": {
+      "nomina": "Nómina",
+      "rrhh": "Recursos Humanos",
+      "facturacion": "Facturación",
+      "gastos": "Gastos"
+    }
+  },
   "nav": {
     "dashboard": "Panel",
     "employees": "Empleados",
