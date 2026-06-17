@@ -50,6 +50,7 @@ export const STORAGE_KEYS = {
   BANK_ACCOUNTS: 'employee_bank_accounts',
   HOLIDAYS: 'payroll_holidays',
   HOLIDAYS_LAST_SYNC: 'holidays_last_sync',
+  VACATION_RULES: 'vacation_rules',
   PAYROLL_HISTORY: 'payroll_history',
   LANGUAGE: 'language',
 } as const
